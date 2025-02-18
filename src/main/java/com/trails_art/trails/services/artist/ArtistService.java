@@ -1,4 +1,4 @@
-package com.trails_art.trails.services;
+package com.trails_art.trails.services.artist;
 
 import com.trails_art.trails.models.Artist;
 
