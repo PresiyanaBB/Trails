@@ -1,9 +1,8 @@
-package com.trails_art.trails.artist;
+package com.trails_art.trails.modules;
 import java.util.UUID;
 
-import com.trails_art.trails.project.Project;
 import jakarta.persistence.*;
-import com.trails_art.trails.image.Image;
+
 import java.util.List;
 import java.util.ArrayList;
 

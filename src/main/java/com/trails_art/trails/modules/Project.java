@@ -1,8 +1,7 @@
-package com.trails_art.trails.project;
+package com.trails_art.trails.modules;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import com.trails_art.trails.image.Image;
-import com.trails_art.trails.location.Location;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
