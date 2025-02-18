@@ -25,7 +25,7 @@ replay_pid*
 
 HELP.md
 TODO.md
-random_data.json
+random_test_data/
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
