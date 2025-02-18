@@ -1,7 +1,7 @@
 package com.trails_art.trails.controllers;
 
 import com.trails_art.trails.repositories.artist.JdbcArtistRepository;
-import com.trails_art.trails.modules.Artist;
+import com.trails_art.trails.models.Artist;
 import jakarta.validation.Valid;
 //import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

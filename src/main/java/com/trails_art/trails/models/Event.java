@@ -1,4 +1,4 @@
-package com.trails_art.trails.modules;
+package com.trails_art.trails.models;
 
 import java.util.UUID;
 import java.time.LocalDateTime;
