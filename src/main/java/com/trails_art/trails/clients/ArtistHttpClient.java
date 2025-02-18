@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.util.List;
 import java.util.UUID;
 
-@RequestMapping("/api/artists")
+@RequestMapping()
 public interface ArtistHttpClient {
     @GetMapping()
     List<Artist> findAll();
