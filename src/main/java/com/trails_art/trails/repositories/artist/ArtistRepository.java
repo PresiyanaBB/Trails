@@ -1,4 +1,6 @@
-package com.trails_art.trails.artist;
+package com.trails_art.trails.repositories.artist;
+
+import com.trails_art.trails.modules.Artist;
 
 import java.util.List;
 import java.util.Optional;

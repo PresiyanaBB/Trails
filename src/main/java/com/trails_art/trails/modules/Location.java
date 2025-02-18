@@ -1,18 +1,18 @@
-package com.trails_art.trails.image;
+package com.trails_art.trails.modules;
 import java.util.UUID;
 
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
 @Entity
-public record Image(
+public record Location(
         @Id
         @GeneratedValue(strategy = GenerationType.UUID)
         UUID id,
-        String MIMEType,
-        @NotNull
-        byte[] data
+        @NotEmpty(message = "Location cannot be empty")
+        String name,
+        String map_address
 ) { }

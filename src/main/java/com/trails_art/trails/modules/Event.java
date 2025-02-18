@@ -1,7 +1,5 @@
-package com.trails_art.trails.event;
+package com.trails_art.trails.modules;
 
-import com.trails_art.trails.location.Location;
-import com.trails_art.trails.image.Image;
 import java.util.UUID;
 import java.time.LocalDateTime;
 import java.time.Duration;
