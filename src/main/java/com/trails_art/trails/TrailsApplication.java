@@ -16,7 +16,9 @@ public class TrailsApplication {
 	public static void main(String[] args) {
 
 		SpringApplication.run(TrailsApplication.class, args);
+
 		log.info("Application started successfully");
+
 	}
 
 }

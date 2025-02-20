@@ -1,7 +1,8 @@
 package com.trails_art.trails.controllers;
 
+import com.trails_art.trails.dtos.LocationDto;
 import com.trails_art.trails.models.Location;
-import com.trails_art.trails.services.location.JdbcLocationService;
+import com.trails_art.trails.services.location.JpaLocationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,20 +16,20 @@ import java.util.UUID;
 @RequestMapping("/api/locations")
 public class LocationController {
 
-    private final JdbcLocationService jdbcLocationService;
+    private final JpaLocationService jpaLocationService;
 
-    LocationController(JdbcLocationService jdbcLocationService) {
-        this.jdbcLocationService = jdbcLocationService;
+    LocationController(JpaLocationService jpaLocationService) {
+        this.jpaLocationService = jpaLocationService;
     }
 
     @GetMapping
     List<Location> findAll() {
-        return jdbcLocationService.findAll();
+        return jpaLocationService.findAll();
     }
 
     @GetMapping("/{id}")
     Location findById(@PathVariable UUID id) {
-        Optional<Location> location = jdbcLocationService.findById(id);
+        Optional<Location> location = jpaLocationService.findById(id);
         if(location.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Location not found.");
         }
@@ -37,32 +38,31 @@ public class LocationController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    void create(@Valid @RequestBody Location location) {
-        jdbcLocationService.create(location);
+    void create(@Valid @RequestBody LocationDto locationDto) {
+        Location location = new Location(locationDto.name(), locationDto.map_address());
+        jpaLocationService.create(location);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/{id}")
-    void update(@Valid @RequestBody Location location, @PathVariable UUID id) {
-        jdbcLocationService.update(location,id);
+    void update(@Valid @RequestBody LocationDto locationDto, @PathVariable UUID id) {
+        Location location = jpaLocationService.findById(id).orElseThrow();
+        location.setName(locationDto.name());
+        location.setMapAddress(locationDto.map_address());
+        jpaLocationService.update(location,id);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{id}")
-    void delete(@PathVariable UUID id) {
-        jdbcLocationService.delete(id);
+    void delete(@PathVariable String id) {
+        jpaLocationService.delete(UUID.fromString(id));
     }
 
     @GetMapping("/count")
-    int count() { return jdbcLocationService.count(); }
+    int count() { return jpaLocationService.count(); }
 
-    @GetMapping("/{name}")
+    @GetMapping("/name/{name}")
     List<Location> findByName(@PathVariable String name) {
-        return jdbcLocationService.findByName(name);
-    }
-
-    @GetMapping("/map/{mapAddress}")
-    List<Location> findByMapAddress(@PathVariable String mapAddress){
-        return jdbcLocationService.findByMapAddress(mapAddress);
+        return jpaLocationService.findByName(name);
     }
 }

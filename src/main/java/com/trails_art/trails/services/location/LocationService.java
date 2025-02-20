@@ -22,6 +22,4 @@ public interface LocationService {
     void saveAll(List<Location> locations);
 
     List<Location> findByName(String name);
-
-    List<Location> findByMapAddress(String mapAddress);
 }

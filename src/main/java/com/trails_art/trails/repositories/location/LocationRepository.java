@@ -23,5 +23,4 @@ public interface LocationRepository {
 
     List<Location> findByName(String name);
 
-    List<Location> findByMapAddress(String mapAddress);
 }

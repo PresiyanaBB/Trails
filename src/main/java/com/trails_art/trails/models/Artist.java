@@ -1,31 +1,61 @@
 package com.trails_art.trails.models;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-import jakarta.persistence.*;
-
-import java.util.List;
-import java.util.ArrayList;
-
-
+@Getter
+@Setter
 @Entity
-public record Artist(
-        @Id
-        @GeneratedValue(strategy = GenerationType.UUID)
-        UUID id,
-        String name,
-        @OneToOne(cascade = CascadeType.ALL)
-        Image image,
-        String description,
-        String instagramUrl,
-        @ManyToMany
-        @JoinTable(
-                name = "artist_project",
-                joinColumns = @JoinColumn(name = "artist_id"),
-                inverseJoinColumns = @JoinColumn(name = "project_id")
-        )
-        List<Project> projects
-) {
-        public Artist {
-                projects = new ArrayList<>();
-        }
+@Table(name = "artist")
+public class Artist {
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    @JoinColumn(name = "image_id")
+    private Image image;
+
+    @Size(max = 255)
+    @Column(name = "description")
+    private String description;
+
+    @Size(max = 255)
+    @Column(name = "instagram_url")
+    private String instagramUrl;
+
+    @Size(max = 255)
+    @Column(name = "name")
+    private String name;
+
+    @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ArtistProject> artistProjects;
+
+
+    public Artist(String name, Image image, String description, String instagramUrl) {
+        this.name = name;
+        this.image = image;
+        this.description = description;
+        this.instagramUrl = instagramUrl;
+        artistProjects = new ArrayList<>();
+    }
+
+    public Artist() {
+
+    }
 }

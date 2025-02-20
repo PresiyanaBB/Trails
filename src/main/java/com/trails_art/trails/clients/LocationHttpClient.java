@@ -40,7 +40,4 @@ public interface LocationHttpClient {
 
     @GetMapping("/{name}")
     List<Location> findByName(@PathVariable String name);
-
-    @GetMapping("/map/{mapAddress}")
-    List<Location> findByMapAddress(@PathVariable String mapAddress);
 }

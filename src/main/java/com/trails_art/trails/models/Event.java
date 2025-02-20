@@ -1,38 +1,64 @@
 package com.trails_art.trails.models;
 
-import java.util.UUID;
-import java.time.LocalDateTime;
-import java.time.Duration;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.*;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Getter
+@Setter
 @Entity
-public record Event(
-        @Id
-        @GeneratedValue(strategy = GenerationType.UUID)
-        UUID id,
-        String name,
-        String description,
-        @OneToOne(cascade = CascadeType.ALL)
-        Image image,
-        LocalDateTime start_time,
-        LocalDateTime end_time,
-        @OneToOne(cascade = CascadeType.ALL)
-        Location location
-) {
-    public Event {
-        if (!end_time.isAfter(start_time)) {
-            throw new IllegalArgumentException("End time must be after Start time");
-        }
+@Table(name = "event")
+public class Event {
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
+
+//    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    @JoinColumn(name = "image_id")
+    private Image image;
+
+//    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    @JoinColumn(name = "location_id")
+    private Location location;
+
+    @Size(max = 255)
+    @Column(name = "description")
+    private String description;
+
+    @Size(max = 255)
+    @Column(name = "name")
+    private String name;
+
+    public Event(String name, String description, Image image, LocalDateTime startTime, LocalDateTime endTime, Location location) {
+        this.name = name;
+        this.description = description;
+        this.image = image;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.location = location;
     }
 
-    public Duration getDuration() {
-        return Duration.between(start_time,end_time);
-    }
+    public Event() {
 
-    public Boolean is_active() {
-        return end_time.isAfter(LocalDateTime.now());
     }
 }
