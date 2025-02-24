@@ -2,7 +2,7 @@ package com.trails_art.trails.controllers;
 
 import com.trails_art.trails.dtos.ImageDto;
 import com.trails_art.trails.dtos.LocationDto;
-import com.trails_art.trails.dtos.ProjectDto;
+import com.trails_art.trails.dtos.ProjectImportDto;
 import com.trails_art.trails.dtos.ProjectExportDto;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.ArtistProject;
@@ -60,41 +60,61 @@ public class ProjectController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    void create(@Valid @RequestBody ProjectDto projectDto) {
-        Image image_artist = new Image(projectDto.artists()[0].image().mimetype(), Base64.getDecoder().decode(projectDto.artists()[0].image().data()));
-        Image image_project = new Image(projectDto.image().mimetype(),Base64.getDecoder().decode(projectDto.image().data()));
-        Artist artist = new Artist(projectDto.artists()[0].name(),image_artist, projectDto.artists()[0].description(), projectDto.artists()[0].instagram_url());
-        Location location = new Location(projectDto.location().name(),projectDto.location().map_address());
-        Project project = new Project(projectDto.name(),location,image_project,projectDto.youtube_url());
-        ArtistProject artistProject = new ArtistProject(artist,project);
-        jpaImageService.create(image_artist);
+    void create(@Valid @RequestBody ProjectImportDto projectImportDto) {
+        Image image_project = new Image(projectImportDto.image().mimetype(),Base64.getDecoder().decode(projectImportDto.image().data()));
+        Location location = new Location(projectImportDto.location().name(), projectImportDto.location().map_address());
+        Project project = new Project(projectImportDto.name(),location,image_project, projectImportDto.youtube_url());
         jpaImageService.create(image_project);
         jpaLocationService.create(location);
         jpaProjectService.create(project);
-        jpaArtistService.create(artist);
-        jpaArtistProjectService.create(artistProject);
-        artist.getArtistProjects().add(artistProject);
-        project.getArtistProjects().add(artistProject);
-        jpaArtistService.update(artist,artist.getId());
+
+        int size = projectImportDto.artists().size();
+        for (int i = 0; i < size; i++) {
+            ProjectImportDto.ArtistData current_artist = projectImportDto.artists().get(i);
+            if(!projectImportDto.is_artist_existing().get(i)) {
+                Image image_artist = new Image(current_artist.image().mimetype(), Base64.getDecoder().decode(current_artist.image().data()));
+                Artist artist = new Artist(current_artist.name(),image_artist, current_artist.description(), current_artist.instagram_url());
+                ArtistProject artistProject = new ArtistProject(artist,project);
+                jpaImageService.create(image_artist);
+                jpaArtistService.create(artist);
+                jpaArtistProjectService.create(artistProject);
+                artist.getArtistProjects().add(artistProject);
+                project.getArtistProjects().add(artistProject);
+                jpaArtistService.update(artist,artist.getId());
+            }
+            else {
+                List<Artist> artists = jpaArtistService.findByName(current_artist.name());
+                artists.forEach(a -> {
+                    if(a.getName().equals(current_artist.name()) && a.getInstagramUrl().equals(current_artist.instagram_url())) {
+                        ArtistProject artistProject = new ArtistProject(a,project);
+                        jpaArtistProjectService.create(artistProject);
+                        a.getArtistProjects().add(artistProject);
+                        project.getArtistProjects().add(artistProject);
+                        jpaArtistService.update(a,a.getId());
+                    }
+                });
+            }
+        }
+
         jpaProjectService.update(project,project.getId());
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/{id}")
-    void update(@Valid @RequestBody ProjectDto projectDto, @PathVariable UUID id) {
+    void update(@Valid @RequestBody ProjectImportDto projectImportDto, @PathVariable UUID id) {
         Project project = jpaProjectService.findById(id).orElseThrow();
         Image image = jpaImageService.findById(project.getImage().getId()).orElseThrow();
-        image.setData(Base64.getDecoder().decode(projectDto.image().data()));
-        image.setMimetype(projectDto.image().mimetype());
+        image.setData(Base64.getDecoder().decode(projectImportDto.image().data()));
+        image.setMimetype(projectImportDto.image().mimetype());
         jpaImageService.update(image,image.getId());
         Location location = jpaLocationService.findById(project.getLocation().getId()).orElseThrow();
-        location.setName(projectDto.location().name());
-        location.setMapAddress(projectDto.location().map_address());
+        location.setName(projectImportDto.location().name());
+        location.setMapAddress(projectImportDto.location().map_address());
         jpaLocationService.update(location,location.getId());
         project.setLocation(location);
-        project.setName(projectDto.name());
+        project.setName(projectImportDto.name());
         project.setImage(image);
-        project.setYoutubeUrl(projectDto.youtube_url());
+        project.setYoutubeUrl(projectImportDto.youtube_url());
         jpaProjectService.update(project,id);
     }
 
