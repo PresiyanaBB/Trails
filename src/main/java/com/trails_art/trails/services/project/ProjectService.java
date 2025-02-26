@@ -1,5 +1,6 @@
 package com.trails_art.trails.services.project;
 
+import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Project;
 
 import java.util.List;
@@ -23,4 +24,10 @@ public interface ProjectService {
     void saveAll(List<Project> projects);
 
     List<Project> findByName(String name);
+
+    void addNonExistingArtist(UUID project_id,Artist artist);
+
+    void addExistingArtist(UUID project_id, UUID artist_id);
+
+    void deleteArtist(UUID project_id, UUID artist_id);
 }

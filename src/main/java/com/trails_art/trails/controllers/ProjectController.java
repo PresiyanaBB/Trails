@@ -118,6 +118,26 @@ public class ProjectController {
         jpaProjectService.update(project,id);
     }
 
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/{id}/artists")
+    void addNonExistingArtist(@Valid @RequestBody ProjectImportDto.ArtistData artistDto, @PathVariable UUID id) {
+        Image image = new Image(artistDto.image().mimetype(), Base64.getDecoder().decode(artistDto.image().data()));
+        Artist artist = new Artist(artistDto.name(), image, artistDto.description(), artistDto.instagram_url());
+        jpaProjectService.addNonExistingArtist(id,artist);
+    }
+
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @PutMapping("/{project_id}/artists/{artist_id}")
+    void addExistingArtist(@PathVariable UUID project_id, @PathVariable UUID artist_id) {
+        jpaProjectService.addExistingArtist(project_id,artist_id);
+    }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping("/{project_id}/artists/{artist_id}")
+    void deleteArtist(@PathVariable UUID project_id, @PathVariable UUID artist_id) {
+        jpaProjectService.deleteArtist(project_id,artist_id);
+    }
+
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{id}")
     void delete(@PathVariable String id) {

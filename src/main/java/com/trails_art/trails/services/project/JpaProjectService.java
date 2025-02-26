@@ -1,6 +1,7 @@
 package com.trails_art.trails.services.project;
 
 import com.trails_art.trails.models.Artist;
+import com.trails_art.trails.models.ArtistProject;
 import com.trails_art.trails.models.Project;
 import com.trails_art.trails.repositories.artist.JpaArtistRepository;
 import com.trails_art.trails.repositories.artist_project.JpaArtistProjectRepository;
@@ -75,5 +76,36 @@ public class JpaProjectService implements ProjectService {
     @Override
     public List<Project> findByName(String name) {
         return jpaProjectRepository.findByNameContainingIgnoreCase(name);
+    }
+
+    public void addNonExistingArtist(UUID project_id, Artist artist){
+        Project project = jpaProjectRepository.findById(project_id).orElseThrow();
+        ArtistProject artistProject = new ArtistProject(artist, project);
+        project.getArtistProjects().add(artistProject);
+        artist.getArtistProjects().add(artistProject);
+        jpaArtistRepository.save(artist);
+        jpaArtistProjectRepository.save(artistProject);
+    }
+
+    public void addExistingArtist(UUID project_id, UUID artist_id){
+        Project project = jpaProjectRepository.findById(project_id).orElseThrow();
+        Artist artist = jpaArtistRepository.findById(artist_id).orElseThrow();
+        ArtistProject artistProject = new ArtistProject(artist, project);
+        project.getArtistProjects().add(artistProject);
+        artist.getArtistProjects().add(artistProject);
+        jpaArtistRepository.save(artist);
+        jpaArtistProjectRepository.save(artistProject);
+    }
+
+    public void deleteArtist(UUID project_id, UUID artist_id){
+        Project project = jpaProjectRepository.findById(project_id).orElseThrow();
+        Artist artist = jpaArtistRepository.findById(artist_id).orElseThrow();
+        ArtistProject artistProject = jpaArtistProjectRepository.findAll().stream()
+                .filter(ap -> ap.getArtist().getId() == artist_id && ap.getProject().getId() == project_id)
+                .findFirst()
+                .orElseThrow();
+        project.getArtistProjects().remove(artistProject);
+        artist.getArtistProjects().remove(artistProject);
+        jpaArtistProjectRepository.delete(artistProject);
     }
 }
