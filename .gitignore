@@ -61,3 +61,55 @@ build/
 
 # Environment Variables and personal data
 src/main/resources/secret.properties
+
+#UI
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+src/main/java/com/trails_art/trails/web/ui/logs
+src/main/java/com/trails_art/trails/web/ui/*.log
+src/main/java/com/trails_art/trails/web/ui/npm-debug.log*
+src/main/java/com/trails_art/trails/web/ui/yarn-debug.log*
+src/main/java/com/trails_art/trails/web/ui/yarn-error.log*
+src/main/java/com/trails_art/trails/web/ui/pnpm-debug.log*
+src/main/java/com/trails_art/trails/web/ui/lerna-debug.log*
+
+src/main/java/com/trails_art/trails/web/ui/node_modules
+src/main/java/com/trails_art/trails/web/ui/dist
+src/main/java/com/trails_art/trails/web/ui/dist-ssr
+src/main/java/com/trails_art/trails/web/ui/*.local
+
+# Editor directories and files
+src/main/java/com/trails_art/trails/web/ui/.vscode/*
+src/main/java/com/trails_art/trails/web/ui/!.vscode/extensions.json
+src/main/java/com/trails_art/trails/web/ui/.idea
+src/main/java/com/trails_art/trails/web/ui/.DS_Store
+src/main/java/com/trails_art/trails/web/ui/*.suo
+src/main/java/com/trails_art/trails/web/ui/*.ntvs*
+src/main/java/com/trails_art/trails/web/ui/*.njsproj
+src/main/java/com/trails_art/trails/web/ui/*.sln
+src/main/java/com/trails_art/trails/web/ui/*.sw?
+
