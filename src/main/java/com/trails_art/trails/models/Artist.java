@@ -21,7 +21,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "artist")
+@Table(name = "artists")
 public class Artist {
     @Id
     @GeneratedValue

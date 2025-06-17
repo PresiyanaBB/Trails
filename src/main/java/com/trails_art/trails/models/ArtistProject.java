@@ -16,7 +16,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "artist_project")
+@Table(name = "artists_projects")
 public class ArtistProject {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

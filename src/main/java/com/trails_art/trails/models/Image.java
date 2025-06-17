@@ -10,7 +10,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "image")
+@Table(name = "images")
 public class Image {
     @Id
     @GeneratedValue
