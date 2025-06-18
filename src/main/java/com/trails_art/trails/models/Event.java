@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -19,7 +20,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+        @Index(name = "idx_event_start_time", columnList = "start_time")
+})
 public class Event {
     @Id
     @GeneratedValue
@@ -31,12 +34,10 @@ public class Event {
     @Column(name = "start_time")
     private LocalDateTime startTime;
 
-//    @OneToOne(fetch = FetchType.LAZY)
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "image_id")
     private Image image;
 
-//    @OneToOne(fetch = FetchType.LAZY)
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "location_id")
     private Location location;
