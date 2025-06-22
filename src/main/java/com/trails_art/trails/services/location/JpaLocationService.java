@@ -1,5 +1,6 @@
 package com.trails_art.trails.services.location;
 
+import com.trails_art.trails.dtos.LocationDto;
 import com.trails_art.trails.models.Location;
 import com.trails_art.trails.repositories.location.JpaLocationRepository;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,12 @@ public class JpaLocationService implements LocationService {
     }
 
     @Override
+    public void createFromDto(LocationDto locationDto) {
+        Location location = new Location(locationDto.name(), locationDto.map_address());
+        create(location);
+    }
+
+    @Override
     public void update(Location location, UUID id) {
         if (jpaLocationRepository.existsById(id)) {
             location.setId(id);
@@ -40,6 +47,14 @@ public class JpaLocationService implements LocationService {
         } else {
             throw new IllegalArgumentException("Location with ID " + id + " not found.");
         }
+    }
+
+    @Override
+    public void updateFromDto(LocationDto locationDto, UUID id) {
+        Location location = findById(id).orElseThrow();
+        location.setName(locationDto.name());
+        location.setMapAddress(locationDto.map_address());
+        update(location,id);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.trails_art.trails.services.image;
 
+import com.trails_art.trails.dtos.ImageDto;
 import com.trails_art.trails.models.Image;
 
 import java.util.List;
@@ -13,7 +14,11 @@ public interface ImageService {
 
     void create(Image image);
 
+    void createFromDto(ImageDto imageDto);
+
     void update(Image image, UUID id);
+
+    void updateFromDto(ImageDto imageDto, UUID id);
 
     void delete(UUID id);
 

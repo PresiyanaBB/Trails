@@ -31,12 +31,10 @@ public class Project {
     @Column(name = "created_on")
     private LocalDateTime createdOn;
 
-//    @OneToOne(fetch = FetchType.LAZY)
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "image_id")
     private Image image;
 
-//    @OneToOne(fetch = FetchType.LAZY)
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "location_id")
     private Location location;

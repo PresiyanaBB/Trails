@@ -1,5 +1,6 @@
 package com.trails_art.trails.services.project;
 
+import com.trails_art.trails.dtos.ProjectImportDto;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Project;
 
@@ -15,7 +16,11 @@ public interface ProjectService {
 
     void create(Project project);
 
+    void createFromDto(ProjectImportDto projectImportDto);
+
     void update(Project project, UUID id);
+
+    void updateFromDto(ProjectImportDto projectImportDto, UUID id);
 
     void delete(UUID id);
 

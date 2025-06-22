@@ -1,12 +1,19 @@
 package com.trails_art.trails.services.artist;
 
+import com.trails_art.trails.dtos.ArtistImportDto;
 import com.trails_art.trails.models.Artist;
+import com.trails_art.trails.models.ArtistProject;
+import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Project;
 import com.trails_art.trails.repositories.artist.JpaArtistRepository;
-import com.trails_art.trails.repositories.artist_project.JpaArtistProjectRepository;
-import com.trails_art.trails.repositories.project.JpaProjectRepository;
+import com.trails_art.trails.services.artist_project.ArtistProjectService;
+import com.trails_art.trails.services.image.ImageService;
+import com.trails_art.trails.services.location.LocationService;
+import com.trails_art.trails.services.project.ProjectService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,13 +22,24 @@ import java.util.UUID;
 public class JpaArtistService implements ArtistService {
 
     private final JpaArtistRepository jpaArtistRepository;
-    private final JpaProjectRepository jpaProjectRepository;
-    private final JpaArtistProjectRepository jpaArtistProjectRepository;
+    private final ProjectService projectService;
+    private final ArtistProjectService artistProjectService;
+    private final ImageService imageService;
+    private final LocationService locationService;
+    private final ArtistMapper artistMapper;
 
-    public JpaArtistService(JpaArtistRepository jpaArtistRepository, JpaProjectRepository jpaProjectRepository, JpaArtistProjectRepository jpaArtistProjectRepository) {
+    public JpaArtistService(JpaArtistRepository jpaArtistRepository,
+                            @Lazy ProjectService projectService,
+                            ArtistProjectService artistProjectService,
+                            ImageService imageService,
+                            LocationService locationService,
+                            ArtistMapper artistMapper) {
         this.jpaArtistRepository = jpaArtistRepository;
-        this.jpaProjectRepository = jpaProjectRepository;
-        this.jpaArtistProjectRepository = jpaArtistProjectRepository;
+        this.projectService = projectService;
+        this.artistProjectService = artistProjectService;
+        this.imageService = imageService;
+        this.locationService = locationService;
+        this.artistMapper = artistMapper;
     }
 
     @Override
@@ -40,6 +58,21 @@ public class JpaArtistService implements ArtistService {
     }
 
     @Override
+    public void createFromDto(ArtistImportDto artistImportDto){
+        Artist artist = artistMapper.mapToArtist(artistImportDto);
+        jpaArtistRepository.save(artist);
+        imageService.create(artist.getImage());
+
+        if (!artistImportDto.is_project_existing()) {
+            handleNewProject(artistImportDto.project(), artist);
+        } else {
+            handleExistingProject(artistImportDto.project(), artist);
+        }
+
+        update(artist, artist.getId());
+    }
+
+    @Override
     public void update(Artist artist, UUID id) {
         if (jpaArtistRepository.existsById(id)) {
             artist.setId(id);
@@ -50,16 +83,34 @@ public class JpaArtistService implements ArtistService {
     }
 
     @Override
+    public void updateFromDto(ArtistImportDto artistImportDto, UUID id){
+        Artist artist = findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Artist with ID " + id + " not found"));
+
+        artist.setName(artistImportDto.name());
+        artist.setDescription(artistImportDto.description());
+        artist.setInstagramUrl(artistImportDto.instagram_url());
+
+        Image image = imageService.findById(artist.getImage().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Image for Artist not found"));
+        image.setMimetype(artistImportDto.image().mimetype());
+        image.setData(Base64.getDecoder().decode(artistImportDto.image().data()));
+        artist.setImage(image);
+
+        update(artist, id);
+    }
+
+    @Override
     public void delete(UUID id) {
         Artist artist = jpaArtistRepository.findById(id).orElseThrow();
         jpaArtistRepository.deleteById(id);
-        List<Project> projects = jpaProjectRepository.findAll();
+        List<Project> projects = projectService.findAll();
         projects.forEach(project -> {
             if(project.getArtistProjects().isEmpty()) {
-                jpaProjectRepository.delete(project);
+                projectService.delete(project.getId());
             }
         });
-        jpaArtistProjectRepository.deleteAll(artist.getArtistProjects());
+        artistProjectService.deleteAll(artist.getArtistProjects());
     }
 
     @Override
@@ -76,4 +127,50 @@ public class JpaArtistService implements ArtistService {
     public List<Artist> findByName(String name) {
         return jpaArtistRepository.findByNameContainingIgnoreCase(name);
     }
+
+    @Override
+    public void addProjects(List<UUID> projects, UUID artistId) {
+        Artist artist = jpaArtistRepository.findById(artistId).orElseThrow();
+        List<Project> projectList = projectService.findAll().stream().filter(project -> projects.contains(project.getId())).toList();
+        projectList.forEach(project -> {
+            ArtistProject ap = new ArtistProject(artist, project);
+            project.getArtistProjects().add(ap);
+            artist.getArtistProjects().add(ap);
+            projectService.create(project);
+            jpaArtistRepository.save(artist);
+            artistProjectService.create(ap);
+        });
+    }
+
+    private void handleNewProject(ArtistImportDto.ProjectData dto, Artist artist) {
+        Project project = artistMapper.mapToProject(dto);
+        ArtistProject artistProject = new ArtistProject(artist, project);
+
+        imageService.create(project.getImage());
+        locationService.create(project.getLocation());
+        projectService.create(project);
+        artistProjectService.create(artistProject);
+
+        artist.getArtistProjects().add(artistProject);
+        project.getArtistProjects().add(artistProject);
+        projectService.update(project, project.getId());
+    }
+
+    private void handleExistingProject(ArtistImportDto.ProjectData dto, Artist artist) {
+        List<Project> projects = projectService.findByName(dto.name());
+
+        for (Project pr : projects) {
+            boolean match = pr.getLocation().getName().equalsIgnoreCase(dto.location().name()) &&
+                    pr.getLocation().getMapAddress().equalsIgnoreCase(dto.location().map_address());
+
+            if (match) {
+                ArtistProject artistProject = new ArtistProject(artist, pr);
+                artistProjectService.create(artistProject);
+                artist.getArtistProjects().add(artistProject);
+                pr.getArtistProjects().add(artistProject);
+                projectService.update(pr, pr.getId());
+            }
+        }
+    }
+
 }

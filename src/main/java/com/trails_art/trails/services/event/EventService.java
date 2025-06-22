@@ -1,5 +1,6 @@
 package com.trails_art.trails.services.event;
 
+import com.trails_art.trails.dtos.EventDto;
 import com.trails_art.trails.models.Event;
 
 import java.util.List;
@@ -12,6 +13,8 @@ public interface EventService {
     Optional<Event> findById(UUID id);
 
     void create(Event event);
+
+    void createFromDto(EventDto eventDto);
 
     void update(Event event, UUID id);
 

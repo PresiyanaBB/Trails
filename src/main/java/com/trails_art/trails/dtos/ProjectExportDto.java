@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProjectExportDto(
+        String id,
         String name,
         LocationDto location,
         ImageDto image,

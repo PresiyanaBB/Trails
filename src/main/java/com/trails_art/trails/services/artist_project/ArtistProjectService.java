@@ -20,5 +20,7 @@ public interface ArtistProjectService {
     int count();
 
     void saveAll(List<ArtistProject> artistProjects);
+
+    void deleteAll(List<ArtistProject> artistProjects);
 }
 

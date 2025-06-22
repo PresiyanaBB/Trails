@@ -56,5 +56,10 @@ public class JpaArtistProjectService implements ArtistProjectService {
     public void saveAll(List<ArtistProject> artistProjects) {
         jpaArtistProjectRepository.saveAll(artistProjects);
     }
+
+    @Override
+    public void deleteAll(List<ArtistProject> artistProjects){
+        jpaArtistProjectRepository.deleteAll(artistProjects);
+    }
 }
 
