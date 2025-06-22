@@ -1,6 +1,7 @@
 package com.trails_art.trails.services.event;
 
 import com.trails_art.trails.dtos.EventDto;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.Event;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Location;
@@ -60,7 +61,7 @@ public class JpaEventService implements EventService {
             event.setId(id);
             jpaEventRepository.save(event);
         } else {
-            throw new IllegalArgumentException("Event with ID " + id + " not found");
+            throw new InvalidArgumentIdException("Event with ID " + id + " not found");
         }
     }
 

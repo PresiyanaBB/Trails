@@ -1,4 +1,4 @@
-package com.trails_art.trails.services.artist;
+package com.trails_art.trails.mappers;
 
 import com.trails_art.trails.dtos.ArtistImportDto;
 import com.trails_art.trails.models.Artist;

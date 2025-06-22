@@ -1,6 +1,7 @@
 package com.trails_art.trails.services.location;
 
 import com.trails_art.trails.dtos.LocationDto;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.Location;
 import com.trails_art.trails.repositories.location.JpaLocationRepository;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class JpaLocationService implements LocationService {
             location.setId(id);
             jpaLocationRepository.save(location);
         } else {
-            throw new IllegalArgumentException("Location with ID " + id + " not found.");
+            throw new InvalidArgumentIdException("Location with ID " + id + " not found.");
         }
     }
 

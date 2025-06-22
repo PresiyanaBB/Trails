@@ -1,6 +1,8 @@
 package com.trails_art.trails.services.artist;
 
 import com.trails_art.trails.dtos.ArtistImportDto;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.mappers.ArtistMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.ArtistProject;
 import com.trails_art.trails.models.Image;
@@ -78,14 +80,14 @@ public class JpaArtistService implements ArtistService {
             artist.setId(id);
             jpaArtistRepository.save(artist);
         } else {
-            throw new IllegalArgumentException("Artist with ID " + id + " not found");
+            throw new InvalidArgumentIdException("Artist with ID " + id + " not found");
         }
     }
 
     @Override
     public void updateFromDto(ArtistImportDto artistImportDto, UUID id){
         Artist artist = findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Artist with ID " + id + " not found"));
+                .orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + id + " not found"));
 
         artist.setName(artistImportDto.name());
         artist.setDescription(artistImportDto.description());

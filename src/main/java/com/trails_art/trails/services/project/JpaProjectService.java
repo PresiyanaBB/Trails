@@ -1,6 +1,8 @@
 package com.trails_art.trails.services.project;
 
 import com.trails_art.trails.dtos.ProjectImportDto;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.ArtistProject;
 import com.trails_art.trails.models.Image;
@@ -11,6 +13,7 @@ import com.trails_art.trails.services.artist.ArtistService;
 import com.trails_art.trails.services.artist_project.ArtistProjectService;
 import com.trails_art.trails.services.image.ImageService;
 import com.trails_art.trails.services.location.LocationService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -29,7 +32,7 @@ public class JpaProjectService implements ProjectService {
     private final ProjectMapper projectMapper;
 
     public JpaProjectService(JpaProjectRepository jpaProjectRepository,
-                             ArtistService artistService,
+                             @Lazy ArtistService artistService,
                              ArtistProjectService artistProjectService,
                              ImageService imageService,
                              LocationService locationService,
@@ -60,14 +63,14 @@ public class JpaProjectService implements ProjectService {
     @Override
     public void createFromDto(ProjectImportDto projectImportDto){
         Project project = projectMapper.mapToProject(projectImportDto);
+        create(project);
         imageService.create(project.getImage());
         locationService.create(project.getLocation());
-        create(project);
-        ProjectImportDto.ArtistData artistData = projectImportDto.artist();
-        if (projectImportDto.is_artist_existing()) {
-            handleExistingArtist(artistData, project);
+
+        if (!projectImportDto.is_artist_existing()) {
+            handleNewArtist(projectImportDto.artist(), project);
         } else {
-            handleNewArtist(artistData, project);
+            handleExistingArtist(projectImportDto.artist(), project);
         }
 
         update(project, project.getId());
@@ -79,7 +82,7 @@ public class JpaProjectService implements ProjectService {
             project.setId(id);
             jpaProjectRepository.save(project);
         } else {
-            throw new IllegalArgumentException("Project with ID " + id + " not found.");
+            throw new InvalidArgumentIdException("Project with ID " + id + " not found.");
         }
     }
 

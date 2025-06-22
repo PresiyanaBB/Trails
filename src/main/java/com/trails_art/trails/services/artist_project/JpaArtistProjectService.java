@@ -1,5 +1,6 @@
 package com.trails_art.trails.services.artist_project;
 
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.ArtistProject;
 import com.trails_art.trails.repositories.artist_project.JpaArtistProjectRepository;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class JpaArtistProjectService implements ArtistProjectService {
             artistProject.setId(id);
             jpaArtistProjectRepository.save(artistProject);
         } else {
-            throw new IllegalArgumentException("ArtistProject with ID " + id + " not found");
+            throw new InvalidArgumentIdException("ArtistProject with ID " + id + " not found");
         }
     }
 

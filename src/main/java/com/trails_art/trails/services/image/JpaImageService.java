@@ -1,6 +1,7 @@
 package com.trails_art.trails.services.image;
 
 import com.trails_art.trails.dtos.ImageDto;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.repositories.image.JpaImageRepository;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class JpaImageService implements ImageService {
             image.setId(id);
             jpaImageRepository.save(image);
         } else {
-            throw new IllegalArgumentException("Image with ID " + id + " not found.");
+            throw new InvalidArgumentIdException("Image with ID " + id + " not found.");
         }
     }
 
