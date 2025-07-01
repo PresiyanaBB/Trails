@@ -1,14 +1,11 @@
 package com.trails_art.trails;
 
-import com.trails_art.trails.clients.HttpClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Import;
 
 
-@Import(HttpClientConfig.class)
 @SpringBootApplication
 public class TrailsApplication {
 

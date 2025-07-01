@@ -1,4 +1,4 @@
-package com.trails_art.trails.clients;
+package com.trails_art.trails.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()); // Disabling CSRF (optional)
+        http.csrf(csrf -> csrf.disable()); // disable cross-site request forgery
         return http.build();
     }
 }

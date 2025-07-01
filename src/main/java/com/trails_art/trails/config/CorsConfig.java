@@ -1,4 +1,4 @@
-package com.trails_art.trails.clients;
+package com.trails_art.trails.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
