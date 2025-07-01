@@ -7,7 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
@@ -43,8 +43,8 @@ public class Artist {
     @Column(name = "name")
     private String name;
 
-    @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ArtistProject> artistProjects;
+    @ManyToMany(mappedBy = "artists")
+    private List<Project> projects = new ArrayList<>();
 
 
     public Artist(String name, Image image, String description, String instagramUrl) {
@@ -52,7 +52,6 @@ public class Artist {
         this.image = image;
         this.description = description;
         this.instagramUrl = instagramUrl;
-        artistProjects = new ArrayList<>();
     }
 
     public Artist() {

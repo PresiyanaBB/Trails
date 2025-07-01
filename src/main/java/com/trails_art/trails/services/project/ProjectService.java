@@ -16,6 +16,8 @@ public interface ProjectService {
 
     List<Project> findAllByIdIn(List<UUID> ids);
 
+    List<Project> findAllWithEmptyArtists();
+
     void create(Project project);
 
     void createFromDto(ProjectImportDto projectImportDto);

@@ -3,7 +3,7 @@ package com.trails_art.trails.services.image;
 import com.trails_art.trails.dtos.ImageDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.Image;
-import com.trails_art.trails.repositories.image.JpaImageRepository;
+import com.trails_art.trails.repositories.JpaImageRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;

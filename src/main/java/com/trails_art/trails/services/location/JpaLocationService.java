@@ -3,7 +3,7 @@ package com.trails_art.trails.services.location;
 import com.trails_art.trails.dtos.LocationDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.Location;
-import com.trails_art.trails.repositories.location.JpaLocationRepository;
+import com.trails_art.trails.repositories.JpaLocationRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

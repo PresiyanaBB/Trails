@@ -5,7 +5,7 @@ import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.models.Event;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Location;
-import com.trails_art.trails.repositories.event.JpaEventRepository;
+import com.trails_art.trails.repositories.JpaEventRepository;
 import com.trails_art.trails.services.image.ImageService;
 import com.trails_art.trails.services.location.LocationService;
 import org.springframework.stereotype.Service;

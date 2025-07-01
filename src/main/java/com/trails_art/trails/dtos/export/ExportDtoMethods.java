@@ -26,16 +26,16 @@ public class ExportDtoMethods {
                 project.getLocation().getMapAddress()
         );
 
-        List<ProjectExportDto.ArtistData> artistDataList = project.getArtistProjects().stream()
+        List<ProjectExportDto.ArtistData> artistDataList = project.getArtists().stream()
                 .map(ap -> new ProjectExportDto.ArtistData(
-                        ap.getArtist().getName(),
+                        ap.getName(),
                         new ImageDto(
-                                ap.getArtist().getImage().getId().toString(),
-                                ap.getArtist().getImage().getMimetype(),
-                                Base64.getEncoder().encodeToString(ap.getArtist().getImage().getData())
+                                ap.getImage().getId().toString(),
+                                ap.getImage().getMimetype(),
+                                Base64.getEncoder().encodeToString(ap.getImage().getData())
                         ),
-                        ap.getArtist().getDescription(),
-                        ap.getArtist().getInstagramUrl()
+                        ap.getDescription(),
+                        ap.getInstagramUrl()
                 )).toList();
 
         return new ProjectExportDto(
@@ -56,21 +56,21 @@ public class ExportDtoMethods {
                 Base64.getEncoder().encodeToString(artist.getImage().getData())
         );
 
-        List<ArtistExportDto.ProjectData> projectDataList = artist.getArtistProjects().stream()
+        List<ArtistExportDto.ProjectData> projectDataList = artist.getProjects().stream()
                 .map(ap -> new ArtistExportDto.ProjectData(
-                        ap.getProject().getName(),
+                        ap.getName(),
                         new LocationDto(
-                                ap.getProject().getLocation().getId().toString(),
-                                ap.getProject().getLocation().getName(),
-                                ap.getProject().getLocation().getMapAddress()
+                                ap.getLocation().getId().toString(),
+                                ap.getLocation().getName(),
+                                ap.getLocation().getMapAddress()
                         ),
                         new ImageDto(
-                                ap.getProject().getImage().getId().toString(),
-                                ap.getProject().getImage().getMimetype(),
-                                Base64.getEncoder().encodeToString(ap.getProject().getImage().getData())
+                                ap.getImage().getId().toString(),
+                                ap.getImage().getMimetype(),
+                                Base64.getEncoder().encodeToString(ap.getImage().getData())
                         ),
-                        ap.getProject().getYoutubeUrl(),
-                        ap.getProject().getCreatedOn().toString()
+                        ap.getYoutubeUrl(),
+                        ap.getCreatedOn().toString()
                 )).toList();
 
         return new ArtistExportDto(

@@ -1,4 +1,4 @@
-package com.trails_art.trails.repositories.event;
+package com.trails_art.trails.repositories;
 
 import com.trails_art.trails.models.Event;
 import org.springframework.data.jpa.repository.JpaRepository;

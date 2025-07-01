@@ -1,4 +1,4 @@
-package com.trails_art.trails.repositories.location;
+package com.trails_art.trails.repositories;
 
 import com.trails_art.trails.models.Location;
 import org.springframework.data.jpa.repository.JpaRepository;

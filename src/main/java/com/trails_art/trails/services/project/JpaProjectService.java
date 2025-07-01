@@ -4,13 +4,11 @@ import com.trails_art.trails.dtos.ProjectImportDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
-import com.trails_art.trails.models.ArtistProject;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Location;
 import com.trails_art.trails.models.Project;
 import com.trails_art.trails.repositories.project.JpaProjectRepository;
 import com.trails_art.trails.services.artist.ArtistService;
-import com.trails_art.trails.services.artist_project.ArtistProjectService;
 import com.trails_art.trails.services.image.ImageService;
 import com.trails_art.trails.services.location.LocationService;
 import org.springframework.context.annotation.Lazy;
@@ -26,20 +24,17 @@ public class JpaProjectService implements ProjectService {
 
     private final JpaProjectRepository jpaProjectRepository;
     private final ArtistService artistService;
-    private final ArtistProjectService artistProjectService;
     private final ImageService imageService;
     private final LocationService locationService;
     private final ProjectMapper projectMapper;
 
     public JpaProjectService(JpaProjectRepository jpaProjectRepository,
                              @Lazy ArtistService artistService,
-                             ArtistProjectService artistProjectService,
                              ImageService imageService,
                              LocationService locationService,
                              ProjectMapper projectMapper) {
         this.jpaProjectRepository = jpaProjectRepository;
         this.artistService = artistService;
-        this.artistProjectService = artistProjectService;
         this.imageService = imageService;
         this.locationService = locationService;
         this.projectMapper = projectMapper;
@@ -56,6 +51,11 @@ public class JpaProjectService implements ProjectService {
     @Override
     public Optional<Project> findById(UUID id) {
         return jpaProjectRepository.findById(id);
+    }
+
+    @Override
+    public List<Project> findAllWithEmptyArtists() {
+        return jpaProjectRepository.findAllWithEmptyArtists();
     }
 
     @Override
@@ -113,15 +113,13 @@ public class JpaProjectService implements ProjectService {
 
     @Override
     public void delete(UUID id) {
-        Project project = jpaProjectRepository.findById(id).orElseThrow();
         jpaProjectRepository.deleteById(id);
         List<Artist> artists = artistService.findAll();
         artists.forEach(artist -> {
-            if(artist.getArtistProjects().isEmpty()) {
+            if(artist.getProjects().isEmpty()) {
                 artistService.delete(artist.getId());
             }
         });
-        artistProjectService.deleteAll(project.getArtistProjects());
     }
 
     @Override
@@ -141,46 +139,40 @@ public class JpaProjectService implements ProjectService {
 
     public void addNonExistingArtist(UUID project_id, Artist artist){
         Project project = jpaProjectRepository.findById(project_id).orElseThrow();
-        ArtistProject artistProject = new ArtistProject(artist, project);
-        project.getArtistProjects().add(artistProject);
-        artist.getArtistProjects().add(artistProject);
+        project.getArtists().add(artist);
+        artist.getProjects().add(project);
         artistService.create(artist);
-        artistProjectService.create(artistProject);
+        update(project, project.getId());
     }
 
     public void addExistingArtist(UUID project_id, UUID artist_id){
         Project project = jpaProjectRepository.findById(project_id).orElseThrow();
         Artist artist = artistService.findById(artist_id).orElseThrow();
-        ArtistProject artistProject = new ArtistProject(artist, project);
-        project.getArtistProjects().add(artistProject);
-        artist.getArtistProjects().add(artistProject);
+        project.getArtists().add(artist);
+        artist.getProjects().add(project);
         artistService.create(artist);
-        artistProjectService.create(artistProject);
+        update(project, project.getId());
     }
 
     public void deleteArtist(UUID project_id, UUID artist_id){
         Project project = jpaProjectRepository.findById(project_id).orElseThrow();
         Artist artist = artistService.findById(artist_id).orElseThrow();
-        ArtistProject artistProject = artistProjectService.findAll().stream()
-                .filter(ap -> ap.getArtist().getId() == artist_id && ap.getProject().getId() == project_id)
-                .findFirst()
-                .orElseThrow();
-        project.getArtistProjects().remove(artistProject);
-        artist.getArtistProjects().remove(artistProject);
-        artistProjectService.delete(artistProject.getId());
+        project.getArtists().remove(artist);
+        artist.getProjects().remove(project);
+        artistService.delete(artist_id);
+        update(project, project.getId());
     }
 
     private void handleNewArtist(ProjectImportDto.ArtistData dto, Project project) {
         Artist artist = projectMapper.mapToArtist(dto);
-        ArtistProject artistProject = new ArtistProject(artist, project);
 
         imageService.create(artist.getImage());
         artistService.create(artist);
-        artistProjectService.create(artistProject);
 
-        artist.getArtistProjects().add(artistProject);
-        project.getArtistProjects().add(artistProject);
+        artist.getProjects().add(project);
+        project.getArtists().add(artist);
         artistService.update(artist, artist.getId());
+        update(project, project.getId());
     }
 
     private void handleExistingArtist(ProjectImportDto.ArtistData dto, Project project) {
@@ -191,11 +183,10 @@ public class JpaProjectService implements ProjectService {
                     artist.getInstagramUrl().equals(dto.instagram_url());
 
             if (match) {
-                ArtistProject artistProject = new ArtistProject(artist, project);
-                artistProjectService.create(artistProject);
-                artist.getArtistProjects().add(artistProject);
-                project.getArtistProjects().add(artistProject);
+                artist.getProjects().add(project);
+                project.getArtists().add(artist);
                 artistService.update(artist, artist.getId());
+                update(project, project.getId());
             }
         }
     }
