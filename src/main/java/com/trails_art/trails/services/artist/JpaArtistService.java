@@ -6,7 +6,7 @@ import com.trails_art.trails.mappers.ArtistMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Project;
-import com.trails_art.trails.repositories.JpaArtistRepository;
+import com.trails_art.trails.repositories.artist.JpaArtistRepository;
 import com.trails_art.trails.services.image.ImageService;
 import com.trails_art.trails.services.location.LocationService;
 import com.trails_art.trails.services.project.ProjectService;
@@ -50,6 +50,11 @@ public class JpaArtistService implements ArtistService {
     }
 
     @Override
+    public List<Artist> findAllWithEmptyProjects() {
+        return jpaArtistRepository.findAllWithEmptyProjects();
+    }
+
+    @Override
     public void create(Artist artist) {
         jpaArtistRepository.save(artist);
     }
@@ -57,8 +62,7 @@ public class JpaArtistService implements ArtistService {
     @Override
     public void createFromDto(ArtistImportDto artistImportDto){
         Artist artist = artistMapper.mapToArtist(artistImportDto);
-        jpaArtistRepository.save(artist);
-        imageService.create(artist.getImage());
+        create(artist);
 
         if (!artistImportDto.is_project_existing()) {
             handleNewProject(artistImportDto.project(), artist);
@@ -102,19 +106,12 @@ public class JpaArtistService implements ArtistService {
     public void delete(UUID id) {
         jpaArtistRepository.deleteById(id);
         List<Project> projects = projectService.findAllWithEmptyArtists();
-        projects.forEach(project -> {
-            projectService.delete(project.getId());
-        });
+        projects.forEach(project -> projectService.delete(project.getId()));
     }
 
     @Override
     public int count() {
         return (int) jpaArtistRepository.count();
-    }
-
-    @Override
-    public void saveAll(List<Artist> artists) {
-        jpaArtistRepository.saveAll(artists);
     }
 
     @Override

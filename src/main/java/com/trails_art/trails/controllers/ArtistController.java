@@ -3,7 +3,8 @@ package com.trails_art.trails.controllers;
 import com.trails_art.trails.dtos.ArtistImportDto;
 import com.trails_art.trails.dtos.ArtistExportDto;
 import com.trails_art.trails.dtos.export.ExportDtoMethods;
-import com.trails_art.trails.models.Artist;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.exceptions.InvalidDTOFormat;
 import com.trails_art.trails.services.artist.ArtistService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -34,11 +35,20 @@ class ArtistController {
 
     @GetMapping("/{id}")
     ResponseEntity<ArtistExportDto> findById(@PathVariable UUID id) {
-        Optional<Artist> artist = artistService.findById(id);
+        Optional<ArtistExportDto> artist;
+        try {
+            artist = artistService.findById(id).map(ExportDtoMethods::exportArtist);
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
         if (artist.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Artist not found.");
         }
-        return new ResponseEntity<>(ExportDtoMethods.exportArtist(artist.get()), HttpStatus.OK);
+
+        return new ResponseEntity<>(artist.get(), HttpStatus.OK);
     }
 
     @Transactional
@@ -46,10 +56,9 @@ class ArtistController {
     ResponseEntity<Void> create(@Valid @RequestBody ArtistImportDto artistImportDto) {
         try {
             artistService.createFromDto(artistImportDto);
-        } catch (IllegalArgumentException e) {
+        } catch (InvalidDTOFormat e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
 
@@ -61,7 +70,9 @@ class ArtistController {
     ResponseEntity<Void> update(@Valid @RequestBody ArtistImportDto artistImportDto, @PathVariable UUID id) {
         try {
             artistService.updateFromDto(artistImportDto,id);
-        } catch (IllegalArgumentException e) {
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (InvalidDTOFormat e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
@@ -71,12 +82,13 @@ class ArtistController {
 
     }
 
+    @Transactional
     @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(@PathVariable String id) {
        try {
            artistService.delete(UUID.fromString(id));
-       } catch (IllegalArgumentException e) {
-           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+       } catch (InvalidArgumentIdException e) {
+           throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
        } catch (Exception e) {
            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
        }
@@ -92,8 +104,16 @@ class ArtistController {
 
     @GetMapping("/name/{name}")
     ResponseEntity<List<ArtistExportDto>> findByName(@PathVariable String name) {
-        return new ResponseEntity<>(artistService.findByName(name).stream().map(ExportDtoMethods::exportArtist).toList(),
-                HttpStatus.OK);
+        List<ArtistExportDto> artists;
+        try {
+            artists  = artistService.findByName(name).stream().map(ExportDtoMethods::exportArtist).toList();
+        } catch (IllegalArgumentException e){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(artists, HttpStatus.OK);
     }
 
     @Transactional
@@ -105,9 +125,12 @@ class ArtistController {
 
         try {
             artistService.addProjects(projectIds, id);
-        } catch (IllegalArgumentException e) {
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (InvalidDTOFormat e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
 

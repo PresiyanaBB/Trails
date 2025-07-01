@@ -12,6 +12,8 @@ public interface ArtistService {
 
     Optional<Artist> findById(UUID id);
 
+    List<Artist> findAllWithEmptyProjects();
+
     void create(Artist artist);
 
     void createFromDto(ArtistImportDto artistImportDto);
@@ -23,8 +25,6 @@ public interface ArtistService {
     void delete(UUID id);
 
     int count();
-
-    void saveAll(List<Artist> artists);
 
     List<Artist> findByName(String name);
 

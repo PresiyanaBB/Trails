@@ -1,10 +1,14 @@
 package com.trails_art.trails.controllers;
 
 import com.trails_art.trails.dtos.LocationDto;
-import com.trails_art.trails.models.Location;
+import com.trails_art.trails.dtos.export.ExportDtoMethods;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.exceptions.InvalidDTOFormat;
 import com.trails_art.trails.services.location.LocationService;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,42 +27,86 @@ public class LocationController {
     }
 
     @GetMapping
-    List<Location> findAll() {
-        return locationService.findAll();
+    ResponseEntity<List<LocationDto>> findAll() {
+        return new ResponseEntity<>(locationService.findAll().stream().map(ExportDtoMethods::exportLocation).toList()
+                , HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    Location findById(@PathVariable UUID id) {
-        Optional<Location> location = locationService.findById(id);
+    ResponseEntity<LocationDto> findById(@PathVariable UUID id) {
+        Optional<LocationDto> location;
+        try {
+            location = locationService.findById(id).map(ExportDtoMethods::exportLocation);
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
         if(location.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Location not found.");
         }
-        return location.get();
+        return new ResponseEntity<>(location.get(), HttpStatus.OK);
     }
 
-    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
     @PostMapping
-    void create(@Valid @RequestBody LocationDto locationDto) {
-        locationService.createFromDto(locationDto);
+    ResponseEntity<Void> create(@Valid @RequestBody LocationDto locationDto) {
+        try {
+            locationService.createFromDto(locationDto);
+        } catch (InvalidDTOFormat e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
     @PutMapping("/{id}")
-    void update(@Valid @RequestBody LocationDto locationDto, @PathVariable UUID id) {
-        locationService.updateFromDto(locationDto, id);
+    ResponseEntity<Void> update(@Valid @RequestBody LocationDto locationDto, @PathVariable UUID id) {
+        try {
+            locationService.updateFromDto(locationDto, id);
+        } catch (InvalidDTOFormat e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
     @DeleteMapping("/{id}")
-    void delete(@PathVariable String id) {
-        locationService.delete(UUID.fromString(id));
+    ResponseEntity<Void> delete(@PathVariable String id) {
+        try {
+            locationService.delete(UUID.fromString(id));
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/count")
-    int count() { return locationService.count(); }
+    ResponseEntity<Integer> count() {
+        return new ResponseEntity<>(locationService.count(), HttpStatus.OK);
+    }
 
     @GetMapping("/name/{name}")
-    List<Location> findByName(@PathVariable String name) {
-        return locationService.findByName(name);
+    ResponseEntity<List<LocationDto>> findByName(@PathVariable String name) {
+        List<LocationDto> locations;
+        try {
+            locations = locationService.findByName(name).stream().map(ExportDtoMethods::exportLocation).toList();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(locations, HttpStatus.OK);
     }
 }

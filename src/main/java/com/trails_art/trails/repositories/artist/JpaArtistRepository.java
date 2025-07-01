@@ -1,4 +1,4 @@
-package com.trails_art.trails.repositories;
+package com.trails_art.trails.repositories.artist;
 
 import com.trails_art.trails.models.Artist;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.UUID;
 
-public interface JpaArtistRepository extends JpaRepository<Artist, UUID> {
+public interface JpaArtistRepository extends JpaRepository<Artist, UUID>, CustomArtistRepository {
     List<Artist> findByNameContainingIgnoreCase(String name);
 }

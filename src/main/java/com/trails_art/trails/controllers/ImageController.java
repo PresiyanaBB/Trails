@@ -1,10 +1,14 @@
 package com.trails_art.trails.controllers;
 
 import com.trails_art.trails.dtos.ImageDto;
-import com.trails_art.trails.models.Image;
+import com.trails_art.trails.dtos.export.ExportDtoMethods;
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.exceptions.InvalidDTOFormat;
 import com.trails_art.trails.services.image.ImageService;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,37 +27,71 @@ public class ImageController {
     }
 
     @GetMapping
-    List<Image> findAll() {
-        return imageService.findAll();
+    ResponseEntity<List<ImageDto>> findAll() {
+        return new ResponseEntity<>(imageService.findAll().stream().map(ExportDtoMethods::exportImage).toList(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    Image findById(@PathVariable UUID id) {
-        Optional<Image> image = imageService.findById(id);
+    ResponseEntity<ImageDto> findById(@PathVariable UUID id) {
+        Optional<ImageDto> image;
+        try {
+            image = imageService.findById(id).map(ExportDtoMethods::exportImage);
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
         if(image.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found.");
         }
-        return image.get();
+        return new ResponseEntity<>(image.get(), HttpStatus.OK);
     }
 
-    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
     @PostMapping
-    void create(@Valid @RequestBody ImageDto imageDto) {
-        imageService.createFromDto(imageDto);
+    ResponseEntity<Void> create(@Valid @RequestBody ImageDto imageDto) {
+        try {
+            imageService.createFromDto(imageDto);
+        } catch (InvalidDTOFormat e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
     @PutMapping("/{id}")
-    void update(@Valid @RequestBody ImageDto imageDto, @PathVariable UUID id) {
-        imageService.updateFromDto(imageDto,id);
+    ResponseEntity<Void> update(@Valid @RequestBody ImageDto imageDto, @PathVariable UUID id) {
+        try {
+            imageService.updateFromDto(imageDto,id);
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (InvalidDTOFormat e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
     @DeleteMapping("/{id}")
-    void delete(@PathVariable String id) {
-        imageService.delete(UUID.fromString(id));
+    ResponseEntity<Void> delete(@PathVariable String id) {
+        try {
+            imageService.delete(UUID.fromString(id));
+        } catch (InvalidArgumentIdException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/count")
-    int count() { return imageService.count(); }
+    ResponseEntity<Integer> count() { return new ResponseEntity<>(imageService.count(), HttpStatus.OK); }
 }

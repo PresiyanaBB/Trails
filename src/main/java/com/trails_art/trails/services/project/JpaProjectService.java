@@ -67,8 +67,6 @@ public class JpaProjectService implements ProjectService {
     public void createFromDto(ProjectImportDto projectImportDto){
         Project project = projectMapper.mapToProject(projectImportDto);
         create(project);
-        imageService.create(project.getImage());
-        locationService.create(project.getLocation());
 
         if (!projectImportDto.is_artist_existing()) {
             handleNewArtist(projectImportDto.artist(), project);
@@ -91,14 +89,14 @@ public class JpaProjectService implements ProjectService {
 
     @Override
     public void updateFromDto(ProjectImportDto projectImportDto, UUID id) {
-         Project project = findById(id).orElseThrow();
+         Project project = findById(id).orElseThrow(() -> new InvalidArgumentIdException("Project with ID " + id + " not found."));
 
-         Image image = imageService.findById(project.getImage().getId()).orElseThrow();
+         Image image = imageService.findById(project.getImage().getId()).orElseThrow(() -> new InvalidArgumentIdException("Image for project with ID " + project.getImage().getId() + " not found."));
          image.setMimetype(projectImportDto.image().mimetype());
          image.setData(Base64.getDecoder().decode(projectImportDto.image().data()));
          imageService.update(image, image.getId());
 
-         Location location = locationService.findById(project.getLocation().getId()).orElseThrow();
+         Location location = locationService.findById(project.getLocation().getId()).orElseThrow(() -> new InvalidArgumentIdException("Location for project with ID " + project.getLocation().getId() + " not found."));
          location.setName(projectImportDto.location().name());
          location.setMapAddress(projectImportDto.location().map_address());
          locationService.update(location, location.getId());
@@ -114,12 +112,8 @@ public class JpaProjectService implements ProjectService {
     @Override
     public void delete(UUID id) {
         jpaProjectRepository.deleteById(id);
-        List<Artist> artists = artistService.findAll();
-        artists.forEach(artist -> {
-            if(artist.getProjects().isEmpty()) {
-                artistService.delete(artist.getId());
-            }
-        });
+        List<Artist> artists = artistService.findAllWithEmptyProjects();
+        artists.forEach(artist -> artistService.delete(artist.getId()));
     }
 
     @Override
@@ -138,16 +132,16 @@ public class JpaProjectService implements ProjectService {
     }
 
     public void addNonExistingArtist(UUID project_id, Artist artist){
-        Project project = jpaProjectRepository.findById(project_id).orElseThrow();
+        Project project = jpaProjectRepository.findById(project_id).orElseThrow(() -> new InvalidArgumentIdException("Project with ID " + project_id + " not found."));
         project.getArtists().add(artist);
         artist.getProjects().add(project);
-        artistService.create(artist);
+        artistService.update(artist, artist.getId());
         update(project, project.getId());
     }
 
     public void addExistingArtist(UUID project_id, UUID artist_id){
-        Project project = jpaProjectRepository.findById(project_id).orElseThrow();
-        Artist artist = artistService.findById(artist_id).orElseThrow();
+        Project project = jpaProjectRepository.findById(project_id).orElseThrow(() -> new InvalidArgumentIdException("Project with ID " + project_id + " not found."));
+        Artist artist = artistService.findById(artist_id).orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + artist_id + " not found."));
         project.getArtists().add(artist);
         artist.getProjects().add(project);
         artistService.create(artist);
@@ -155,8 +149,8 @@ public class JpaProjectService implements ProjectService {
     }
 
     public void deleteArtist(UUID project_id, UUID artist_id){
-        Project project = jpaProjectRepository.findById(project_id).orElseThrow();
-        Artist artist = artistService.findById(artist_id).orElseThrow();
+        Project project = jpaProjectRepository.findById(project_id).orElseThrow(() -> new InvalidArgumentIdException("Project with ID " + project_id + " not found."));
+        Artist artist = artistService.findById(artist_id).orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + artist_id + " not found."));
         project.getArtists().remove(artist);
         artist.getProjects().remove(project);
         artistService.delete(artist_id);
@@ -166,7 +160,6 @@ public class JpaProjectService implements ProjectService {
     private void handleNewArtist(ProjectImportDto.ArtistData dto, Project project) {
         Artist artist = projectMapper.mapToArtist(dto);
 
-        imageService.create(artist.getImage());
         artistService.create(artist);
 
         artist.getProjects().add(project);

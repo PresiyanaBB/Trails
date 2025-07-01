@@ -29,6 +29,12 @@ public class GlobalExceptionHandler {
     public final ResponseEntity handleValidationException(InvalidArgumentIdException e) {
         log.error(Map.of().toString());
 
+        return new ResponseEntity(new HashMap<>(Map.of()), HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler({InvalidDTOFormat.class})
+    public final ResponseEntity handleValidationException(InvalidDTOFormat e) {
+        log.error(Map.of().toString());
+
         return new ResponseEntity(new HashMap<>(Map.of()), HttpStatus.BAD_REQUEST);
     }
 

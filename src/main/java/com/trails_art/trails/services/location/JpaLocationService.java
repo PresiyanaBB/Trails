@@ -52,7 +52,7 @@ public class JpaLocationService implements LocationService {
 
     @Override
     public void updateFromDto(LocationDto locationDto, UUID id) {
-        Location location = findById(id).orElseThrow();
+        Location location = findById(id).orElseThrow(() -> new InvalidArgumentIdException("Location with ID " + id + " not found."));
         location.setName(locationDto.name());
         location.setMapAddress(locationDto.map_address());
         update(location,id);

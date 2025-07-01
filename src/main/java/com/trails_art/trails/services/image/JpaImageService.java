@@ -53,7 +53,7 @@ public class JpaImageService implements ImageService {
 
     @Override
     public void updateFromDto(ImageDto imageDto, UUID id) {
-        Image image = findById(id).orElseThrow();
+        Image image = findById(id).orElseThrow(() -> new InvalidArgumentIdException("Image with ID " + id + " not found."));
         image.setData(Base64.getDecoder().decode(imageDto.data()));
         image.setMimetype(imageDto.mimetype());
         update(image,id);

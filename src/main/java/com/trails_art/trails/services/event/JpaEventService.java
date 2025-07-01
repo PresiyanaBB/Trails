@@ -2,12 +2,11 @@ package com.trails_art.trails.services.event;
 
 import com.trails_art.trails.dtos.EventDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.exceptions.InvalidDTOFormat;
 import com.trails_art.trails.models.Event;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Location;
 import com.trails_art.trails.repositories.JpaEventRepository;
-import com.trails_art.trails.services.image.ImageService;
-import com.trails_art.trails.services.location.LocationService;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -19,15 +18,9 @@ import java.util.UUID;
 public class JpaEventService implements EventService {
 
     private final JpaEventRepository jpaEventRepository;
-    private final ImageService imageService;
-    private final LocationService locationService;
 
-    public JpaEventService(JpaEventRepository jpaEventRepository,
-                           ImageService imageService,
-                           LocationService locationService) {
+    public JpaEventService(JpaEventRepository jpaEventRepository) {
         this.jpaEventRepository = jpaEventRepository;
-        this.imageService = imageService;
-        this.locationService = locationService;
     }
 
     @Override
@@ -47,11 +40,17 @@ public class JpaEventService implements EventService {
 
     @Override
     public void createFromDto(EventDto eventDto){
-        Image image = new Image(eventDto.image().mimetype(), Base64.getDecoder().decode(eventDto.image().data()));
-        Location location = new Location(eventDto.location().name(),eventDto.location().map_address());
-        Event event = new Event(eventDto.name(), eventDto.description(), image,eventDto.start_time(),eventDto.end_time(),location);
-        imageService.create(image);
-        locationService.create(location);
+        Image image;
+        Location location;
+        Event event;
+        try {
+            image = new Image(eventDto.image().mimetype(), Base64.getDecoder().decode(eventDto.image().data()));
+            location = new Location(eventDto.location().name(),eventDto.location().map_address());
+            event = new Event(eventDto.name(), eventDto.description(), image,eventDto.start_time(),eventDto.end_time(),location);
+        } catch (Exception e) {
+            throw new InvalidDTOFormat(e.getMessage() + "\nInvalid Event DTO");
+        }
+
         create(event);
     }
 

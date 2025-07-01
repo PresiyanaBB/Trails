@@ -7,6 +7,8 @@ import com.trails_art.trails.dtos.LocationDto;
 import com.trails_art.trails.dtos.ProjectExportDto;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Event;
+import com.trails_art.trails.models.Image;
+import com.trails_art.trails.models.Location;
 import com.trails_art.trails.models.Project;
 
 import java.util.Base64;
@@ -105,5 +107,19 @@ public class ExportDtoMethods {
                 event.getEndTime(),
                 locationDto
         );
+    }
+
+    public static ImageDto exportImage(Image image) {
+        return new ImageDto(
+                image.getId().toString(),
+                image.getMimetype(),
+                Base64.getEncoder().encodeToString(image.getData())
+        );
+    }
+
+    public static LocationDto exportLocation(Location location) {
+        return new LocationDto(location.getId().toString(),
+                location.getName(),
+                location.getMapAddress());
     }
 }
