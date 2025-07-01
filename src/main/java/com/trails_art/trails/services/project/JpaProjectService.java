@@ -51,6 +51,9 @@ public class JpaProjectService implements ProjectService {
     }
 
     @Override
+    public List<Project> findAllByIdIn(List<UUID> ids) { return jpaProjectRepository.findAllById(ids); }
+
+    @Override
     public Optional<Project> findById(UUID id) {
         return jpaProjectRepository.findById(id);
     }

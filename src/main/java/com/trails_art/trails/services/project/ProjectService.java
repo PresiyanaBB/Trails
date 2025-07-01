@@ -14,6 +14,8 @@ public interface ProjectService {
 
     Optional<Project> findById(UUID id);
 
+    List<Project> findAllByIdIn(List<UUID> ids);
+
     void create(Project project);
 
     void createFromDto(ProjectImportDto projectImportDto);

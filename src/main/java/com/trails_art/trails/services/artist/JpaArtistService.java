@@ -99,6 +99,7 @@ public class JpaArtistService implements ArtistService {
         image.setData(Base64.getDecoder().decode(artistImportDto.image().data()));
         artist.setImage(image);
 
+        imageService.update(image,image.getId());
         update(artist, id);
     }
 
@@ -132,15 +133,15 @@ public class JpaArtistService implements ArtistService {
 
     @Override
     public void addProjects(List<UUID> projects, UUID artistId) {
-        Artist artist = jpaArtistRepository.findById(artistId).orElseThrow();
-        List<Project> projectList = projectService.findAll().stream().filter(project -> projects.contains(project.getId())).toList();
+        Artist artist = jpaArtistRepository.findById(artistId).orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + artistId + " not found"));
+        List<Project> projectList = projectService.findAllByIdIn(projects).stream().toList();
         projectList.forEach(project -> {
             ArtistProject ap = new ArtistProject(artist, project);
             project.getArtistProjects().add(ap);
             artist.getArtistProjects().add(ap);
-            projectService.create(project);
-            jpaArtistRepository.save(artist);
             artistProjectService.create(ap);
+            projectService.update(project, project.getId());
+            update(artist, artistId);
         });
     }
 
