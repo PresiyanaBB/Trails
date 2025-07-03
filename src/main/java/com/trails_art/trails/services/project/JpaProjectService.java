@@ -66,7 +66,6 @@ public class JpaProjectService implements ProjectService {
     @Override
     public void createFromDto(ProjectImportDto projectImportDto){
         Project project = projectMapper.mapToProject(projectImportDto);
-        create(project);
 
         if (!projectImportDto.is_artist_existing()) {
             handleNewArtist(projectImportDto.artist(), project);
@@ -74,7 +73,7 @@ public class JpaProjectService implements ProjectService {
             handleExistingArtist(projectImportDto.artist(), project);
         }
 
-        update(project, project.getId());
+        create(project);
     }
 
     @Override
@@ -160,12 +159,10 @@ public class JpaProjectService implements ProjectService {
     private void handleNewArtist(ProjectImportDto.ArtistData dto, Project project) {
         Artist artist = projectMapper.mapToArtist(dto);
 
-        artistService.create(artist);
-
         artist.getProjects().add(project);
         project.getArtists().add(artist);
-        artistService.update(artist, artist.getId());
-        update(project, project.getId());
+
+        artistService.create(artist);
     }
 
     private void handleExistingArtist(ProjectImportDto.ArtistData dto, Project project) {
@@ -179,7 +176,6 @@ public class JpaProjectService implements ProjectService {
                 artist.getProjects().add(project);
                 project.getArtists().add(artist);
                 artistService.update(artist, artist.getId());
-                update(project, project.getId());
             }
         }
     }

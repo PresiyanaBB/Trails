@@ -1,8 +1,9 @@
 package com.trails_art.trails.repositories;
 
-import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
-import com.trails_art.trails.repositories.artist.JpaArtistRepository;
+import com.trails_art.trails.models.Location;
+import com.trails_art.trails.models.Project;
+import com.trails_art.trails.repositories.project.JpaProjectRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,19 +16,20 @@ import java.nio.charset.StandardCharsets;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
-public class ArtistRepositoryTest {
+public class ProjectRepositoryTest {
     @Autowired
-    private JpaArtistRepository artistRepository;
+    private JpaProjectRepository projectRepository;
 
     @Test
-    @DisplayName("findByNameContainingIgnoreCase: finds artist by name case-insensitive")
+    @DisplayName("findByNameContainingIgnoreCase: finds project by name case-insensitive")
     public void findByNameContainingIgnoreCase() {
         byte[] imageData = "test-image".getBytes(StandardCharsets.UTF_8);
         Image image = new Image("image/jpg",imageData );
-        Artist artist = new Artist("Test", image , "description", "https://instagram.com/test");
+        Location location = new Location("name","address");
+        Project project = new Project("Test",location,image,"https://youtube.com/test");
 
-        artistRepository.save(artist);
+        projectRepository.save(project);
 
-        Assertions.assertEquals(1,artistRepository.findByNameContainingIgnoreCase("tESt").size());
+        Assertions.assertEquals(1,projectRepository.findByNameContainingIgnoreCase("tESt").size());
     }
 }
