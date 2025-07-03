@@ -26,7 +26,12 @@ public class JpaLocationService implements LocationService {
 
     @Override
     public Optional<Location> findById(UUID id) {
-        return jpaLocationRepository.findById(id);
+        Optional<Location> location = jpaLocationRepository.findById(id);
+        if (location.isEmpty()) {
+            throw new InvalidArgumentIdException("Location with ID " + id + " not found.");
+        }
+
+        return location;
     }
 
     @Override

@@ -27,7 +27,12 @@ public class JpaImageService implements ImageService {
 
     @Override
     public Optional<Image> findById(UUID id) {
-        return jpaImageRepository.findById(id);
+        Optional<Image> image = jpaImageRepository.findById(id);
+        if (image.isEmpty()) {
+            throw new InvalidArgumentIdException("Image with ID " + id + " not found.");
+        }
+
+        return image;
     }
 
     @Override

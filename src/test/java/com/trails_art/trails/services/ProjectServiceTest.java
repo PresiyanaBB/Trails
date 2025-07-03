@@ -1,5 +1,6 @@
 package com.trails_art.trails.services;
 
+import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
@@ -347,5 +348,129 @@ class ProjectServiceTest {
         assertFalse(artist.getProjects().contains(project));
         verify(artistService).delete(artistId);
         verify(jpaProjectRepository, atLeastOnce()).save(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("update: throws InvalidArgumentIdException when project does not exist")
+    void update_WhenProjectDoesNotExist_ThrowsException() {
+        UUID invalidId = randomUUID();
+        when(jpaProjectRepository.existsById(invalidId)).thenReturn(false);
+        InvalidArgumentIdException thrown = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.update(project, invalidId)
+        );
+        assertEquals("Project with ID " + invalidId + " not found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("updateFromDto: throws InvalidArgumentIdException when project does not exist")
+    void updateFromDto_WhenProjectDoesNotExist_ThrowsException() {
+        UUID invalidId = randomUUID();
+        when(jpaProjectRepository.findById(invalidId)).thenReturn(Optional.empty());
+        InvalidArgumentIdException thrown = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.updateFromDto(projectImportDtoExistingArtist, invalidId)
+        );
+        assertEquals("Project with ID " + invalidId + " not found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("addNonExistingArtist: throws InvalidArgumentIdException when project does not exist")
+    void addNonExistingArtist_WhenProjectDoesNotExist_ThrowsException() {
+        UUID invalidId = randomUUID();
+        when(jpaProjectRepository.findById(invalidId)).thenReturn(Optional.empty());
+        InvalidArgumentIdException thrown = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.addNonExistingArtist(invalidId, artist)
+        );
+        assertEquals("Project with ID " + invalidId + " not found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("addExistingArtist: throws InvalidArgumentIdException when project or artist does not exist")
+    void addExistingArtist_WhenProjectOrArtistDoesNotExist_ThrowsException() {
+        UUID invalidProjectId = randomUUID();
+        UUID invalidArtistId = randomUUID();
+        // Project not found
+        when(jpaProjectRepository.findById(invalidProjectId)).thenReturn(Optional.empty());
+        InvalidArgumentIdException thrown1 = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.addExistingArtist(invalidProjectId, invalidArtistId)
+        );
+        assertEquals("Project with ID " + invalidProjectId + " not found.", thrown1.getMessage());
+        // Project found, artist not found
+        when(jpaProjectRepository.findById(invalidProjectId)).thenReturn(Optional.of(project));
+        when(artistService.findById(invalidArtistId)).thenReturn(Optional.empty());
+        InvalidArgumentIdException thrown2 = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.addExistingArtist(invalidProjectId, invalidArtistId)
+        );
+        assertEquals("Artist with ID " + invalidArtistId + " not found.", thrown2.getMessage());
+    }
+
+    @Test
+    @DisplayName("deleteArtist: throws InvalidArgumentIdException when project or artist does not exist")
+    void deleteArtist_WhenProjectOrArtistDoesNotExist_ThrowsException() {
+        UUID invalidProjectId = randomUUID();
+        UUID invalidArtistId = randomUUID();
+        // Project not found
+        when(jpaProjectRepository.findById(invalidProjectId)).thenReturn(Optional.empty());
+        InvalidArgumentIdException thrown1 = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.deleteArtist(invalidProjectId, invalidArtistId)
+        );
+        assertEquals("Project with ID " + invalidProjectId + " not found.", thrown1.getMessage());
+        // Project found, artist not found
+        when(jpaProjectRepository.findById(invalidProjectId)).thenReturn(Optional.of(project));
+        when(artistService.findById(invalidArtistId)).thenReturn(Optional.empty());
+        InvalidArgumentIdException thrown2 = assertThrows(
+            InvalidArgumentIdException.class,
+            () -> jpaProjectService.deleteArtist(invalidProjectId, invalidArtistId)
+        );
+        assertEquals("Artist with ID " + invalidArtistId + " not found.", thrown2.getMessage());
+    }
+
+    @Test
+    @DisplayName("createFromDto: throws InvalidDTOFormat for invalid image DTO")
+    void createFromDto_WithInvalidImageDto_ThrowsInvalidDTOFormat() {
+        com.trails_art.trails.dtos.ImageDto badImageDto = new com.trails_art.trails.dtos.ImageDto("id", "image/png", "not_base64");
+        com.trails_art.trails.dtos.ProjectImportDto badDto = new com.trails_art.trails.dtos.ProjectImportDto(
+            "ProjectName", locationDto, badImageDto, "yt", artistData, false
+        );
+        when(projectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Image DTO is not valid"));
+        com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
+            com.trails_art.trails.exceptions.InvalidDTOFormat.class,
+            () -> jpaProjectService.createFromDto(badDto)
+        );
+        assertEquals("Image DTO is not valid", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("createFromDto: throws InvalidDTOFormat for invalid location DTO")
+    void createFromDto_WithInvalidLocationDto_ThrowsInvalidDTOFormat() {
+        com.trails_art.trails.dtos.LocationDto badLocationDto = new com.trails_art.trails.dtos.LocationDto("id", null, null);
+        com.trails_art.trails.dtos.ProjectImportDto badDto = new com.trails_art.trails.dtos.ProjectImportDto(
+            "ProjectName", badLocationDto, imageDto, "yt", artistData, false
+        );
+        when(projectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Location DTO is not valid"));
+        com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
+            com.trails_art.trails.exceptions.InvalidDTOFormat.class,
+            () -> jpaProjectService.createFromDto(badDto)
+        );
+        assertEquals("Location DTO is not valid", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("createFromDto: throws InvalidDTOFormat for invalid project DTO")
+    void createFromDto_WithInvalidProjectDto_ThrowsInvalidDTOFormat() {
+        com.trails_art.trails.dtos.ProjectImportDto badDto = new com.trails_art.trails.dtos.ProjectImportDto(
+            null, locationDto, imageDto, "yt", artistData, false
+        );
+        when(projectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Project DTO is not valid"));
+        com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
+            com.trails_art.trails.exceptions.InvalidDTOFormat.class,
+            () -> jpaProjectService.createFromDto(badDto)
+        );
+        assertEquals("Project DTO is not valid", thrown.getMessage());
     }
 }

@@ -46,7 +46,12 @@ public class JpaArtistService implements ArtistService {
 
     @Override
     public Optional<Artist> findById(UUID id) {
-        return jpaArtistRepository.findById(id);
+        Optional<Artist> artist = jpaArtistRepository.findById(id);
+        if (artist.isEmpty()) {
+            throw new InvalidArgumentIdException("Artist with ID " + id + " not found.");
+        }
+
+        return artist;
     }
 
     @Override
@@ -78,21 +83,21 @@ public class JpaArtistService implements ArtistService {
             artist.setId(id);
             jpaArtistRepository.save(artist);
         } else {
-            throw new InvalidArgumentIdException("Artist with ID " + id + " not found");
+            throw new InvalidArgumentIdException("Artist with ID " + id + " not found.");
         }
     }
 
     @Override
     public void updateFromDto(ArtistImportDto artistImportDto, UUID id){
         Artist artist = findById(id)
-                .orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + id + " not found"));
+                .orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + id + " not found."));
 
         artist.setName(artistImportDto.name());
         artist.setDescription(artistImportDto.description());
         artist.setInstagramUrl(artistImportDto.instagram_url());
 
         Image image = imageService.findById(artist.getImage().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Image for Artist not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Image for Artist not found."));
         image.setMimetype(artistImportDto.image().mimetype());
         image.setData(Base64.getDecoder().decode(artistImportDto.image().data()));
         artist.setImage(image);
@@ -120,7 +125,7 @@ public class JpaArtistService implements ArtistService {
 
     @Override
     public void addProjects(List<UUID> projects, UUID artistId) {
-        Artist artist = jpaArtistRepository.findById(artistId).orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + artistId + " not found"));
+        Artist artist = jpaArtistRepository.findById(artistId).orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + artistId + " not found."));
         List<Project> projectList = projectService.findAllByIdIn(projects).stream().toList();
         projectList.forEach(project -> {
             project.getArtists().add(artist);

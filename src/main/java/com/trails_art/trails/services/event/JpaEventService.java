@@ -30,7 +30,11 @@ public class JpaEventService implements EventService {
 
     @Override
     public Optional<Event> findById(UUID id) {
-        return jpaEventRepository.findById(id);
+        Optional<Event> event = jpaEventRepository.findById(id);
+        if (event.isEmpty()) {
+            throw new InvalidArgumentIdException("Event with ID " + id + " not found.");
+        }
+        return event;
     }
 
     @Override
@@ -60,7 +64,7 @@ public class JpaEventService implements EventService {
             event.setId(id);
             jpaEventRepository.save(event);
         } else {
-            throw new InvalidArgumentIdException("Event with ID " + id + " not found");
+            throw new InvalidArgumentIdException("Event with ID " + id + " not found.");
         }
     }
 

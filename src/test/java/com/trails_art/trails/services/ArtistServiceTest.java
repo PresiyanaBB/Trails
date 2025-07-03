@@ -102,6 +102,21 @@ class ArtistServiceTest {
     }
 
     @Test
+    @DisplayName("findById: throws when artist id not found")
+    void findById_whenArtistIdNotFound_throwsException() {
+        when(jpaArtistRepository.findById(artistId)).thenReturn(Optional.empty());
+
+        InvalidArgumentIdException thrown = assertThrows(
+                InvalidArgumentIdException.class,
+                () -> jpaArtistService.findById(artistId)
+        );
+        assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
+
+        verify(jpaArtistRepository).findById(artistId);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+    }
+
+    @Test
     @DisplayName("update: throws when artist id not found")
     void update_whenArtistIdNotFound_throwsException() {
         Artist artist = createArtist();
@@ -112,7 +127,7 @@ class ArtistServiceTest {
                 InvalidArgumentIdException.class,
                 () -> jpaArtistService.update(artist, artistId)
         );
-        assertEquals("Artist with ID " + artistId + " not found", thrown.getMessage());
+        assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
         
         verify(jpaArtistRepository).existsById(artistId);
         verify(jpaArtistRepository, never()).save(any());
@@ -259,6 +274,23 @@ class ArtistServiceTest {
     }
 
     @Test
+    @DisplayName("updateFromDto: throws when artist id not found")
+    void updateFromDto_whenArtistIdNotFound_throwsException() {
+        var imageDto = createImageDto();
+        var dto = new com.trails_art.trails.dtos.ArtistImportDto("ArtistName", imageDto, "desc", "insta", null, null);
+        when(jpaArtistRepository.findById(artistId)).thenReturn(Optional.empty());
+
+        InvalidArgumentIdException thrown = assertThrows(
+                InvalidArgumentIdException.class,
+                () -> jpaArtistService.updateFromDto(dto, artistId)
+        );
+        assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
+
+        verify(jpaArtistRepository).findById(artistId);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+    }
+
+    @Test
     @DisplayName("addProjects: adds projects to artist and updates")
     void addProjects_addsProjectsToArtistAndUpdates() {
         Artist artist = createArtist();
@@ -277,6 +309,22 @@ class ArtistServiceTest {
         
         verify(projectService).update(project, projectId);
         verify(jpaArtistRepository, atLeastOnce()).save(artist);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+    }
+
+    @Test
+    @DisplayName("addProjects: throws when artist id not found")
+    void addProjects_whenArtistIdNotFound_throwsException() {
+        List<UUID> projectIds = of(projectId);
+        when(jpaArtistRepository.findById(artistId)).thenReturn(Optional.empty());
+
+        InvalidArgumentIdException thrown = assertThrows(
+                InvalidArgumentIdException.class,
+                () -> jpaArtistService.addProjects(projectIds, artistId)
+        );
+
+        assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
+        verify(jpaArtistRepository).findById(artistId);
         verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
     }
 }

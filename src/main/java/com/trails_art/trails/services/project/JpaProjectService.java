@@ -50,7 +50,11 @@ public class JpaProjectService implements ProjectService {
 
     @Override
     public Optional<Project> findById(UUID id) {
-        return jpaProjectRepository.findById(id);
+        Optional<Project> project = jpaProjectRepository.findById(id);
+        if (project.isEmpty()) {
+            throw new InvalidArgumentIdException("Project with ID " + id + " not found.");
+        }
+        return project;
     }
 
     @Override
