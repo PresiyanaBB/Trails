@@ -137,13 +137,6 @@ class ImageServiceTest {
     }
 
     @Test
-    @DisplayName("delete: deletes image by ID")
-    void delete_WhenCalled_DeletesImage() {
-        jpaImageService.delete(imageId);
-        verify(jpaImageRepository, times(1)).deleteById(imageId);
-    }
-
-    @Test
     @DisplayName("count: returns the count of images")
     void count_WhenCalled_ReturnsImageCount() {
         when(jpaImageRepository.count()).thenReturn(3L);

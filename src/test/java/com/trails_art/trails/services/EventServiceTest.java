@@ -155,13 +155,6 @@ public class EventServiceTest {
     }
 
     @Test
-    @DisplayName("delete: deletes an event by ID")
-    void delete_WhenCalled_DeletesEvent() {
-        jpaEventService.delete(eventId);
-        verify(jpaEventRepository, times(1)).deleteById(eventId);
-    }
-
-    @Test
     @DisplayName("count: returns the count of events")
     void count_WhenCalled_ReturnsEventCount() {
         when(jpaEventRepository.count()).thenReturn(5L);

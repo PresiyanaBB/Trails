@@ -27,12 +27,7 @@ public class JpaImageService implements ImageService {
 
     @Override
     public Optional<Image> findById(UUID id) {
-        Optional<Image> image = jpaImageRepository.findById(id);
-        if (image.isEmpty()) {
-            throw new InvalidArgumentIdException("Image with ID " + id + " not found.");
-        }
-
-        return image;
+        return jpaImageRepository.findById(id);
     }
 
     @Override
@@ -66,6 +61,7 @@ public class JpaImageService implements ImageService {
 
     @Override
     public void delete(UUID id) {
+        jpaImageRepository.findById(id).orElseThrow(() -> new InvalidArgumentIdException("Image with ID " + id + " not found."));
         jpaImageRepository.deleteById(id);
     }
 

@@ -50,11 +50,7 @@ public class JpaProjectService implements ProjectService {
 
     @Override
     public Optional<Project> findById(UUID id) {
-        Optional<Project> project = jpaProjectRepository.findById(id);
-        if (project.isEmpty()) {
-            throw new InvalidArgumentIdException("Project with ID " + id + " not found.");
-        }
-        return project;
+        return jpaProjectRepository.findById(id);
     }
 
     @Override
@@ -114,9 +110,20 @@ public class JpaProjectService implements ProjectService {
 
     @Override
     public void delete(UUID id) {
+        Project project = jpaProjectRepository.findById(id)
+                .orElseThrow(() -> new InvalidArgumentIdException("Project with ID " + id + " not found."));
+
+        List<Artist> artistsCopy = List.copyOf(project.getArtists());
+        for (Artist a : artistsCopy) {
+            a.setProjects(a.getProjects().stream().filter(p -> !p.getId().equals(id)).toList());
+
+        }
+        project.setArtists(List.of());
+        update(project,id);
         jpaProjectRepository.deleteById(id);
+
         List<Artist> artists = artistService.findAllWithEmptyProjects();
-        artists.forEach(artist -> artistService.delete(artist.getId()));
+        artists.forEach(a -> artistService.delete(a.getId()));
     }
 
     @Override

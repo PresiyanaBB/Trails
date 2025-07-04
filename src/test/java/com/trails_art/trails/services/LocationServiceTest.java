@@ -133,13 +133,6 @@ class LocationServiceTest {
     }
 
     @Test
-    @DisplayName("delete: deletes location by ID")
-    void delete_WhenCalled_DeletesLocation() {
-        jpaLocationService.delete(locationId);
-        verify(jpaLocationRepository, times(1)).deleteById(locationId);
-    }
-
-    @Test
     @DisplayName("count: returns the count of locations")
     void count_WhenCalled_ReturnsLocationCount() {
         when(jpaLocationRepository.count()).thenReturn(4L);

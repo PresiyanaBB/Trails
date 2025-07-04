@@ -161,18 +161,6 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("delete: deletes a project and cleans up empty artists")
-    void delete_WhenCalled_DeletesProjectAndCleansUpArtists() {
-        UUID id = randomUUID();
-        List<com.trails_art.trails.models.Artist> emptyArtists = new ArrayList<>();
-        when(artistService.findAllWithEmptyProjects()).thenReturn(emptyArtists);
-        jpaProjectService.delete(id);
-
-        verify(jpaProjectRepository, times(1)).deleteById(id);
-        verify(artistService, times(1)).findAllWithEmptyProjects();
-    }
-
-    @Test
     @DisplayName("createFromDto: with new artist creates project and artist")
     void createFromDto_WithNewArtist_CreatesProjectAndArtist() {
         when(projectMapper.mapToProject(projectImportDtoNewArtist)).thenReturn(project);

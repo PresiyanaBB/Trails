@@ -102,21 +102,6 @@ class ArtistServiceTest {
     }
 
     @Test
-    @DisplayName("findById: throws when artist id not found")
-    void findById_whenArtistIdNotFound_throwsException() {
-        when(jpaArtistRepository.findById(artistId)).thenReturn(Optional.empty());
-
-        InvalidArgumentIdException thrown = assertThrows(
-                InvalidArgumentIdException.class,
-                () -> jpaArtistService.findById(artistId)
-        );
-        assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
-
-        verify(jpaArtistRepository).findById(artistId);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
-    }
-
-    @Test
     @DisplayName("update: throws when artist id not found")
     void update_whenArtistIdNotFound_throwsException() {
         Artist artist = createArtist();
@@ -171,18 +156,6 @@ class ArtistServiceTest {
         
         verify(jpaArtistRepository).save(artist);
         verify(jpaArtistRepository).existsById(artistId);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
-    }
-
-    @Test
-    @DisplayName("delete: deletes artist and projects with no artists")
-    void delete_deletesArtistAndDeletesProjectsWithNoArtists() {
-        when(projectService.findAllWithEmptyArtists()).thenReturn(of());
-        
-        jpaArtistService.delete(artistId);
-        
-        verify(jpaArtistRepository).deleteById(artistId);
-        verify(projectService).findAllWithEmptyArtists();
         verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
     }
 

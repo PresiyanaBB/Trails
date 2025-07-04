@@ -46,12 +46,7 @@ public class JpaArtistService implements ArtistService {
 
     @Override
     public Optional<Artist> findById(UUID id) {
-        Optional<Artist> artist = jpaArtistRepository.findById(id);
-        if (artist.isEmpty()) {
-            throw new InvalidArgumentIdException("Artist with ID " + id + " not found.");
-        }
-
-        return artist;
+        return jpaArtistRepository.findById(id);
     }
 
     @Override
@@ -108,7 +103,18 @@ public class JpaArtistService implements ArtistService {
 
     @Override
     public void delete(UUID id) {
+        Artist artist = jpaArtistRepository.findById(id)
+                .orElseThrow(() -> new InvalidArgumentIdException("Artist with ID " + id + " not found."));
+
+        List<Project> projectsCopy = List.copyOf(artist.getProjects());
+        for (Project project : projectsCopy) {
+            project.setArtists(project.getArtists().stream().filter(a -> !a.getId().equals(id)).toList());
+
+        }
+        artist.setProjects(List.of());
+        update(artist,id);
         jpaArtistRepository.deleteById(id);
+
         List<Project> projects = projectService.findAllWithEmptyArtists();
         projects.forEach(project -> projectService.delete(project.getId()));
     }
