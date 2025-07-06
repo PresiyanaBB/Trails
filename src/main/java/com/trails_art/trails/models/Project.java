@@ -1,19 +1,9 @@
 package com.trails_art.trails.models;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,31 +12,36 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = {"name", "youtubeUrl", "createdOn"})
 @Entity
 @Table(name = "projects")
 public class Project {
+
     @Id
     @GeneratedValue
     private UUID id;
 
-    @Column(name = "created_on")
-    private LocalDateTime createdOn;
+    @Column(name = "created_on", nullable = false)
+    private LocalDateTime createdOn = LocalDateTime.now();
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @JoinColumn(name = "image_id")
-    private Image image;
-
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @JoinColumn(name = "location_id")
-    private Location location;
-
+    @NotBlank
     @Size(max = 255)
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Size(max = 255)
     @Column(name = "youtube_url")
     private String youtubeUrl;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "image_id")
+    private Image image;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "location_id")
+    private Location location;
 
     @ManyToMany
     @JoinTable(
@@ -56,15 +51,15 @@ public class Project {
     )
     private List<Artist> artists = new ArrayList<>();
 
-    public Project(String name, Location location, Image image, String youtubeUrl) {
+    public Project(String name,
+                   Location location,
+                   Image image,
+                   String youtubeUrl)
+    {
         this.name = name;
         this.location = location;
         this.image = image;
         this.youtubeUrl = youtubeUrl;
         this.createdOn = LocalDateTime.now();
-    }
-
-    public Project() {
-
     }
 }
