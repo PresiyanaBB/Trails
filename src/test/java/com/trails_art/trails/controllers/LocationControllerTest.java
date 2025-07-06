@@ -13,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 
@@ -42,8 +41,8 @@ public class LocationControllerTest {
     @BeforeEach
     void setUp() {
         locationRepository.deleteAll();
-        Location loc1 = locationRepository.save(new Location("Loc1", "Addr1"));
-        Location loc2 = locationRepository.save(new Location("Loc2", "Addr2"));
+        locationRepository.save(new Location("Loc1", "Addr1"));
+        locationRepository.save(new Location("Loc2", "Addr2"));
         List<Location> all = locationRepository.findAll();
         savedLocation = all.get(0);
         savedLocation2 = all.get(1);
@@ -55,15 +54,6 @@ public class LocationControllerTest {
         mockMvc.perform(get("/api/locations"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
-    }
-
-    @Test
-    @DisplayName("GET /api/locations/count - returns count of locations")
-    void count_returnsCountOfLocations() throws Exception {
-        mockMvc.perform(get("/api/locations/count"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("2"));
     }
 
     @Test

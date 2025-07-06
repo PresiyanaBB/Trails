@@ -3,13 +3,13 @@ package com.trails_art.trails.services.event;
 import com.trails_art.trails.dtos.EventDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.exceptions.InvalidDTOFormat;
+import com.trails_art.trails.mappers.EventMapper;
+import com.trails_art.trails.mappers.ImageMapper;
+import com.trails_art.trails.mappers.LocationMapper;
 import com.trails_art.trails.models.Event;
-import com.trails_art.trails.models.Image;
-import com.trails_art.trails.models.Location;
 import com.trails_art.trails.repositories.JpaEventRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,19 +39,16 @@ public class JpaEventService implements EventService {
     }
 
     @Override
-    public void createFromDto(EventDto eventDto){
-        Image image;
-        Location location;
+    public Event createFromDto(EventDto eventDto){
         Event event;
         try {
-            image = new Image(eventDto.image().mimetype(), Base64.getDecoder().decode(eventDto.image().data()));
-            location = new Location(eventDto.location().name(),eventDto.location().map_address());
-            event = new Event(eventDto.name(), eventDto.description(), image,eventDto.start_time(),eventDto.end_time(),location);
+            event = EventMapper.mapToEvent(eventDto);
         } catch (Exception e) {
             throw new InvalidDTOFormat(e.getMessage() + "\nInvalid Event DTO");
         }
 
         create(event);
+        return event;
     }
 
     @Override
@@ -62,6 +59,19 @@ public class JpaEventService implements EventService {
         } else {
             throw new InvalidArgumentIdException("Event with ID " + id + " not found.");
         }
+    }
+
+    @Override
+    public Event updateFromDto(EventDto eventDto, UUID id){
+        Event event = jpaEventRepository.findById(id).orElseThrow(() -> new InvalidArgumentIdException("Event with ID " + id + " not found."));
+        event.setName(eventDto.name());
+        event.setDescription(eventDto.description());
+        event.setLocation(LocationMapper.mapToLocation(eventDto.location()));
+        event.setImage(ImageMapper.mapToImage(eventDto.image()));
+        event.setStartTime(eventDto.start_time());
+        event.setEndTime(eventDto.end_time());
+        update(event, id);
+        return event;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.trails_art.trails.services.location;
 
 import com.trails_art.trails.dtos.LocationDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.mappers.LocationMapper;
 import com.trails_art.trails.models.Location;
 import com.trails_art.trails.repositories.JpaLocationRepository;
 import org.springframework.stereotype.Service;
@@ -35,9 +36,10 @@ public class JpaLocationService implements LocationService {
     }
 
     @Override
-    public void createFromDto(LocationDto locationDto) {
-        Location location = new Location(locationDto.name(), locationDto.map_address());
+    public Location createFromDto(LocationDto locationDto) {
+        Location location = LocationMapper.mapToLocation(locationDto);
         create(location);
+        return location;
     }
 
     @Override
@@ -51,11 +53,12 @@ public class JpaLocationService implements LocationService {
     }
 
     @Override
-    public void updateFromDto(LocationDto locationDto, UUID id) {
+    public Location updateFromDto(LocationDto locationDto, UUID id) {
         Location location = findById(id).orElseThrow(() -> new InvalidArgumentIdException("Location with ID " + id + " not found."));
         location.setName(locationDto.name());
         location.setMapAddress(locationDto.map_address());
         update(location,id);
+        return location;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.trails_art.trails.services;
 
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
 import com.trails_art.trails.mappers.ArtistMapper;
+import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Location;
@@ -17,8 +18,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +37,6 @@ class ArtistServiceTest {
     @Mock private ProjectService projectService;
     @Mock private ImageService imageService;
     @Mock private LocationService locationService;
-    @Mock private ArtistMapper artistMapper;
     @Mock private JpaArtistRepository jpaArtistRepository;
     @InjectMocks private JpaArtistService jpaArtistService;
 
@@ -78,8 +80,8 @@ class ArtistServiceTest {
     private com.trails_art.trails.dtos.LocationDto createLocationDto() {
         return new com.trails_art.trails.dtos.LocationDto(null, "LocName", "LocAddr");
     }
-    private com.trails_art.trails.dtos.ArtistImportDto.ProjectData createProjectData() {
-        return new com.trails_art.trails.dtos.ArtistImportDto.ProjectData("ProjName", createLocationDto(), createImageDto(), "yt");
+    private com.trails_art.trails.dtos.ProjectDataDto createProjectData() {
+        return new com.trails_art.trails.dtos.ProjectDataDto("ProjName", createLocationDto(), createImageDto(), "yt", LocalDateTime.now().toString());
     }
     private com.trails_art.trails.dtos.ArtistImportDto createArtistImportDto(boolean isProjectExisting) {
         return new com.trails_art.trails.dtos.ArtistImportDto("ArtistName", createImageDto(), "desc", "insta", createProjectData(), isProjectExisting);
@@ -98,7 +100,7 @@ class ArtistServiceTest {
         assertEquals(artistId, result.get().getId());
         
         verify(jpaArtistRepository).findById(artistId);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -116,7 +118,7 @@ class ArtistServiceTest {
         
         verify(jpaArtistRepository).existsById(artistId);
         verify(jpaArtistRepository, never()).save(any());
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -129,7 +131,7 @@ class ArtistServiceTest {
         assertEquals(2, result.size());
         
         verify(jpaArtistRepository).findAll();
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -140,7 +142,7 @@ class ArtistServiceTest {
         jpaArtistService.create(artist);
         
         verify(jpaArtistRepository).save(artist);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -156,7 +158,7 @@ class ArtistServiceTest {
         
         verify(jpaArtistRepository).save(artist);
         verify(jpaArtistRepository).existsById(artistId);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     // DTO Tests
@@ -171,17 +173,21 @@ class ArtistServiceTest {
         project.setLocation(location);
         project.setImage(projectImage);
 
-        when(artistMapper.mapToArtist(dto)).thenReturn(artist);
-        when(artistMapper.mapToProject(dto.project())).thenReturn(project);
-        
-        jpaArtistService.createFromDto(dto);
-        
-        verify(jpaArtistRepository).save(artist);
-        verify(imageService).create(project.getImage());
-        verify(locationService).create(project.getLocation());
-        verify(projectService).create(project);
-        verify(jpaArtistRepository, atLeastOnce()).save(artist);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        try (MockedStatic<ArtistMapper> artistMapperMock = mockStatic(ArtistMapper.class);
+             MockedStatic<ProjectMapper> projectMapperMock = mockStatic(ProjectMapper.class)) {
+            
+            artistMapperMock.when(() -> ArtistMapper.mapToArtist(dto)).thenReturn(artist);
+            projectMapperMock.when(() -> ProjectMapper.mapToProject(dto.project())).thenReturn(project);
+            
+            jpaArtistService.createFromDto(dto);
+            
+            verify(jpaArtistRepository).save(artist);
+            verify(imageService).create(project.getImage());
+            verify(locationService).create(project.getLocation());
+            verify(projectService).create(project);
+            verify(jpaArtistRepository, atLeastOnce()).save(artist);
+            verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
+        }
     }
 
     @Test
@@ -196,15 +202,17 @@ class ArtistServiceTest {
         project.setImage(projectImage);
         var projects = of(project);
         
-        when(artistMapper.mapToArtist(dto)).thenReturn(artist);
-        when(projectService.findByName(dto.project().name())).thenReturn(projects);
-        
-        jpaArtistService.createFromDto(dto);
-        
-        verify(jpaArtistRepository).save(artist);
-        verify(projectService).update(project, project.getId());
-        verify(jpaArtistRepository, atLeastOnce()).save(artist);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        try (MockedStatic<ArtistMapper> artistMapperMock = mockStatic(ArtistMapper.class)) {
+            artistMapperMock.when(() -> ArtistMapper.mapToArtist(dto)).thenReturn(artist);
+            when(projectService.findByName(dto.project().name())).thenReturn(projects);
+            
+            jpaArtistService.createFromDto(dto);
+            
+            verify(jpaArtistRepository).save(artist);
+            verify(projectService).update(project, project.getId());
+            verify(jpaArtistRepository, atLeastOnce()).save(artist);
+            verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
+        }
     }
 
     @Test
@@ -212,12 +220,14 @@ class ArtistServiceTest {
     void createFromDto_invalidDto_throws() {
         var dto = mock(com.trails_art.trails.dtos.ArtistImportDto.class);
         
-        when(artistMapper.mapToArtist(dto)).thenThrow(new RuntimeException("Invalid DTO"));
-        
-        assertThrows(RuntimeException.class, () -> jpaArtistService.createFromDto(dto));
-        
-        verify(artistMapper).mapToArtist(dto);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        try (MockedStatic<ArtistMapper> artistMapperMock = mockStatic(ArtistMapper.class)) {
+            artistMapperMock.when(() -> ArtistMapper.mapToArtist(dto)).thenThrow(new RuntimeException("Invalid DTO"));
+            
+            assertThrows(RuntimeException.class, () -> jpaArtistService.createFromDto(dto));
+            
+            artistMapperMock.verify(() -> ArtistMapper.mapToArtist(dto));
+            verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
+        }
     }
 
     @Test
@@ -243,7 +253,7 @@ class ArtistServiceTest {
         
         verify(imageService).update(image, imageId);
         verify(jpaArtistRepository, atLeastOnce()).save(artist);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -260,7 +270,7 @@ class ArtistServiceTest {
         assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
 
         verify(jpaArtistRepository).findById(artistId);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -282,7 +292,7 @@ class ArtistServiceTest {
         
         verify(projectService).update(project, projectId);
         verify(jpaArtistRepository, atLeastOnce()).save(artist);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 
     @Test
@@ -298,6 +308,6 @@ class ArtistServiceTest {
 
         assertEquals("Artist with ID " + artistId + " not found.", thrown.getMessage());
         verify(jpaArtistRepository).findById(artistId);
-        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService, artistMapper);
+        verifyNoMoreInteractions(jpaArtistRepository, projectService, imageService, locationService);
     }
 }

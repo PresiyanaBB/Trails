@@ -1,6 +1,7 @@
 package com.trails_art.trails.services;
 
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.mappers.ArtistMapper;
 import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
 import java.util.*;
@@ -33,8 +35,6 @@ class ProjectServiceTest {
     private ImageService imageService;
     @Mock
     private LocationService locationService;
-    @Mock
-    private ProjectMapper projectMapper;
 
     @InjectMocks
     private JpaProjectService jpaProjectService;
@@ -42,7 +42,7 @@ class ProjectServiceTest {
     // Common test data
     private com.trails_art.trails.dtos.ImageDto imageDto;
     private com.trails_art.trails.dtos.LocationDto locationDto;
-    private com.trails_art.trails.dtos.ProjectImportDto.ArtistData artistData;
+    private com.trails_art.trails.dtos.ArtistDataDto artistData;
     private com.trails_art.trails.dtos.ProjectImportDto projectImportDtoNewArtist;
     private com.trails_art.trails.dtos.ProjectImportDto projectImportDtoExistingArtist;
     private Project project;
@@ -73,8 +73,8 @@ class ProjectServiceTest {
         return new com.trails_art.trails.dtos.LocationDto(randomUUID().toString(), "LocName", "Address");
     }
 
-    private com.trails_art.trails.dtos.ProjectImportDto.ArtistData createArtistData() {
-        return new com.trails_art.trails.dtos.ProjectImportDto.ArtistData("ArtistName", imageDto, "desc", "insta");
+    private com.trails_art.trails.dtos.ArtistDataDto createArtistData() {
+        return new com.trails_art.trails.dtos.ArtistDataDto("ArtistName", imageDto, "desc", "insta");
     }
 
     private com.trails_art.trails.dtos.ProjectImportDto createProjectImportDto(boolean isArtistExisting) {
@@ -163,33 +163,43 @@ class ProjectServiceTest {
     @Test
     @DisplayName("createFromDto: with new artist creates project and artist")
     void createFromDto_WithNewArtist_CreatesProjectAndArtist() {
-        when(projectMapper.mapToProject(projectImportDtoNewArtist)).thenReturn(project);
-        when(projectMapper.mapToArtist(artistData)).thenReturn(artist);
-        doNothing().when(artistService).create(artist);
-        doNothing().when(artistService).update(any(Artist.class), any());
-        when(jpaProjectRepository.save(any(Project.class))).thenReturn(project);
-        when(jpaProjectRepository.existsById(any())).thenReturn(true);
-        jpaProjectService.createFromDto(projectImportDtoNewArtist);
+        try (MockedStatic<ProjectMapper> projectMapperMock = mockStatic(ProjectMapper.class);
+             MockedStatic<ArtistMapper> artistMapperMock = mockStatic(ArtistMapper.class)) {
+            
+            projectMapperMock.when(() -> ProjectMapper.mapToProject(projectImportDtoNewArtist)).thenReturn(project);
+            artistMapperMock.when(() -> ArtistMapper.mapToArtist(artistData)).thenReturn(artist);
+            
+            doNothing().when(artistService).create(artist);
+            doNothing().when(artistService).update(any(Artist.class), any());
+            when(jpaProjectRepository.save(any(Project.class))).thenReturn(project);
+            when(jpaProjectRepository.existsById(any())).thenReturn(true);
+            
+            jpaProjectService.createFromDto(projectImportDtoNewArtist);
 
-        verify(projectMapper).mapToProject(projectImportDtoNewArtist);
-        verify(projectMapper).mapToArtist(artistData);
-        verify(artistService).create(artist);
-        verify(jpaProjectRepository, atLeastOnce()).save(any(Project.class));
+            projectMapperMock.verify(() -> ProjectMapper.mapToProject(projectImportDtoNewArtist));
+            artistMapperMock.verify(() -> ArtistMapper.mapToArtist(artistData));
+            verify(artistService).create(artist);
+            verify(jpaProjectRepository, atLeastOnce()).save(any(Project.class));
+        }
     }
 
     @Test
     @DisplayName("createFromDto: with existing artist adds artist to project")
     void createFromDto_WithExistingArtist_AddsArtistToProject() {
-        when(projectMapper.mapToProject(projectImportDtoExistingArtist)).thenReturn(project);
-        when(artistService.findByName(artistData.name())).thenReturn(List.of(artist));
-        doNothing().when(artistService).update(any(Artist.class), any());
-        when(jpaProjectRepository.save(any(Project.class))).thenReturn(project);
-        when(jpaProjectRepository.existsById(any())).thenReturn(true);
-        jpaProjectService.createFromDto(projectImportDtoExistingArtist);
+        try (MockedStatic<ProjectMapper> projectMapperMock = mockStatic(ProjectMapper.class)) {
+            projectMapperMock.when(() -> ProjectMapper.mapToProject(projectImportDtoExistingArtist)).thenReturn(project);
+            
+            when(artistService.findByName(artistData.name())).thenReturn(List.of(artist));
+            doNothing().when(artistService).update(any(Artist.class), any());
+            when(jpaProjectRepository.save(any(Project.class))).thenReturn(project);
+            when(jpaProjectRepository.existsById(any())).thenReturn(true);
+            
+            jpaProjectService.createFromDto(projectImportDtoExistingArtist);
 
-        verify(projectMapper).mapToProject(projectImportDtoExistingArtist);
-        verify(artistService).findByName(artistData.name());
-        verify(jpaProjectRepository, atLeastOnce()).save(any(Project.class));
+            projectMapperMock.verify(() -> ProjectMapper.mapToProject(projectImportDtoExistingArtist));
+            verify(artistService).findByName(artistData.name());
+            verify(jpaProjectRepository, atLeastOnce()).save(any(Project.class));
+        }
     }
 
     @Test
@@ -425,12 +435,15 @@ class ProjectServiceTest {
         com.trails_art.trails.dtos.ProjectImportDto badDto = new com.trails_art.trails.dtos.ProjectImportDto(
             "ProjectName", locationDto, badImageDto, "yt", artistData, false
         );
-        when(projectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Image DTO is not valid"));
-        com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
-            com.trails_art.trails.exceptions.InvalidDTOFormat.class,
-            () -> jpaProjectService.createFromDto(badDto)
-        );
-        assertEquals("Image DTO is not valid", thrown.getMessage());
+        try (MockedStatic<ProjectMapper> projectMapperMock = mockStatic(ProjectMapper.class)) {
+            projectMapperMock.when(() -> ProjectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Image DTO is not valid"));
+            
+            com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
+                com.trails_art.trails.exceptions.InvalidDTOFormat.class,
+                () -> jpaProjectService.createFromDto(badDto)
+            );
+            assertEquals("Image DTO is not valid", thrown.getMessage());
+        }
     }
 
     @Test
@@ -440,12 +453,15 @@ class ProjectServiceTest {
         com.trails_art.trails.dtos.ProjectImportDto badDto = new com.trails_art.trails.dtos.ProjectImportDto(
             "ProjectName", badLocationDto, imageDto, "yt", artistData, false
         );
-        when(projectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Location DTO is not valid"));
-        com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
-            com.trails_art.trails.exceptions.InvalidDTOFormat.class,
-            () -> jpaProjectService.createFromDto(badDto)
-        );
-        assertEquals("Location DTO is not valid", thrown.getMessage());
+        try (MockedStatic<ProjectMapper> projectMapperMock = mockStatic(ProjectMapper.class)) {
+            projectMapperMock.when(() -> ProjectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Location DTO is not valid"));
+            
+            com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
+                com.trails_art.trails.exceptions.InvalidDTOFormat.class,
+                () -> jpaProjectService.createFromDto(badDto)
+            );
+            assertEquals("Location DTO is not valid", thrown.getMessage());
+        }
     }
 
     @Test
@@ -454,11 +470,14 @@ class ProjectServiceTest {
         com.trails_art.trails.dtos.ProjectImportDto badDto = new com.trails_art.trails.dtos.ProjectImportDto(
             null, locationDto, imageDto, "yt", artistData, false
         );
-        when(projectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Project DTO is not valid"));
-        com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
-            com.trails_art.trails.exceptions.InvalidDTOFormat.class,
-            () -> jpaProjectService.createFromDto(badDto)
-        );
-        assertEquals("Project DTO is not valid", thrown.getMessage());
+        try (MockedStatic<ProjectMapper> projectMapperMock = mockStatic(ProjectMapper.class)) {
+            projectMapperMock.when(() -> ProjectMapper.mapToProject(badDto)).thenThrow(new com.trails_art.trails.exceptions.InvalidDTOFormat("Project DTO is not valid"));
+            
+            com.trails_art.trails.exceptions.InvalidDTOFormat thrown = assertThrows(
+                com.trails_art.trails.exceptions.InvalidDTOFormat.class,
+                () -> jpaProjectService.createFromDto(badDto)
+            );
+            assertEquals("Project DTO is not valid", thrown.getMessage());
+        }
     }
 }

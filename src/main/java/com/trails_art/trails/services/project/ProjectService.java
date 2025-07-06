@@ -20,11 +20,11 @@ public interface ProjectService {
 
     void create(Project project);
 
-    void createFromDto(ProjectImportDto projectImportDto);
+    Project createFromDto(ProjectImportDto projectImportDto);
 
     void update(Project project, UUID id);
 
-    void updateFromDto(ProjectImportDto projectImportDto, UUID id);
+    Project updateFromDto(ProjectImportDto projectImportDto, UUID id);
 
     void delete(UUID id);
 

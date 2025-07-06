@@ -16,13 +16,6 @@ public record ProjectImportDto(
         @NotBlank(message = "Need to have minimum 1 non-white space character")
         String youtube_url,
         @Valid
-        ArtistData artist,
+        ArtistDataDto artist,
         Boolean is_artist_existing
-) {
-    public record ArtistData(
-            String name,
-            ImageDto image,
-            String description,
-            String instagram_url
-    ) { }
-}
+) { }

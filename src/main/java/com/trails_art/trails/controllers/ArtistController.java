@@ -2,141 +2,91 @@ package com.trails_art.trails.controllers;
 
 import com.trails_art.trails.dtos.ArtistImportDto;
 import com.trails_art.trails.dtos.ArtistExportDto;
-import com.trails_art.trails.dtos.export.ExportDtoMethods;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
-import com.trails_art.trails.exceptions.InvalidDTOFormat;
+import com.trails_art.trails.mappers.ArtistMapper;
+import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.services.artist.ArtistService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/artists")
-class ArtistController {
+public class ArtistController {
 
     private final ArtistService artistService;
 
-    ArtistController(ArtistService artistService) {
+    public ArtistController(ArtistService artistService) {
         this.artistService = artistService;
     }
 
     @GetMapping
-    ResponseEntity<List<ArtistExportDto>> findAll() {
-        return new ResponseEntity<>(artistService.findAll().stream().map(ExportDtoMethods::exportArtist)
-                .toList(), HttpStatus.OK);
+    public ResponseEntity<List<ArtistExportDto>> findAll() {
+        List<ArtistExportDto> dtos = artistService.findAll().stream()
+                .map(ArtistMapper::mapToArtistDto)
+                .toList();
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(dtos.size()))
+                .body(dtos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable UUID id) {
-        try {
-            Optional<ArtistExportDto> artist = artistService.findById(id)
-                    .map(ExportDtoMethods::exportArtist);
-
-            if (artist.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Artist not found."));
-            }
-
-            return ResponseEntity.ok(artist.get());
-        } catch (InvalidArgumentIdException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<ArtistExportDto> findById(@PathVariable UUID id) {
+        Artist artist = artistService.findById(id)
+                .orElseThrow(() -> new InvalidArgumentIdException("Artist not found."));
+        return ResponseEntity.ok(ArtistMapper.mapToArtistDto(artist));
     }
 
+    @GetMapping(params = "name")
+    public ResponseEntity<List<ArtistExportDto>> findByName(@RequestParam String name) {
+        List<ArtistExportDto> dtos = artistService.findByName(name).stream()
+                .map(ArtistMapper::mapToArtistDto)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
 
-    @Transactional
     @PostMapping
-    ResponseEntity<?> create(@Valid @RequestBody ArtistImportDto artistImportDto) {
-        try {
-            artistService.createFromDto(artistImportDto);
-        } catch (InvalidDTOFormat e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    @Transactional
+    public ResponseEntity<ArtistExportDto> create(@Valid @RequestBody ArtistImportDto dto) {
+        Artist artist = artistService.createFromDto(dto);
+        URI location = URI.create("/api/artists/" + artist.getId());
+        return ResponseEntity.created(location)
+                .body(ArtistMapper.mapToArtistDto(artist));
     }
 
-    @Transactional
     @PutMapping("/{id}")
-    ResponseEntity<?> update(@Valid @RequestBody ArtistImportDto artistImportDto, @PathVariable UUID id) {
-        try {
-            artistService.updateFromDto(artistImportDto, id);
-        } catch (InvalidArgumentIdException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (InvalidDTOFormat e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
-
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-
+    @Transactional
+    public ResponseEntity<ArtistExportDto> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ArtistImportDto dto
+    ) {
+        Artist artist = artistService.updateFromDto(dto, id);
+        return ResponseEntity.ok(ArtistMapper.mapToArtistDto(artist));
     }
 
-    @Transactional
     @DeleteMapping("/{id}")
-    ResponseEntity<?> delete(@PathVariable String id) {
-       try {
-           artistService.delete(UUID.fromString(id));
-       } catch (InvalidArgumentIdException e) {
-           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-       } catch (Exception e) {
-           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-       }
-
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
-
-    @GetMapping("/count")
-    ResponseEntity<Integer> count() {
-        return ResponseEntity.ok(artistService.count());
-    }
-
-    @GetMapping("/name/{name}")
-    ResponseEntity<?> findByName(@PathVariable String name) {
-        List<ArtistExportDto> artists;
-        try {
-            artists  = artistService.findByName(name).stream().map(ExportDtoMethods::exportArtist).toList();
-        } catch (InvalidArgumentIdException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
-
-        return ResponseEntity.ok(artists);
-    }
-
     @Transactional
-    @PutMapping("/add-projects/{id}")
-    ResponseEntity<?> addProjects(@PathVariable UUID id, @RequestBody List<String> projects) {
-        List<UUID> projectIds = projects.stream()
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        artistService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/projects")
+    @Transactional
+    public ResponseEntity<List<UUID>> addProjects(
+            @PathVariable UUID id,
+            @RequestBody List<String> projectIdsRaw
+    ) {
+        List<UUID> projectIds = projectIdsRaw.stream()
                 .map(UUID::fromString)
                 .toList();
-
-        try {
-            artistService.addProjects(projectIds, id);
-        } catch (InvalidArgumentIdException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (InvalidDTOFormat e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        artistService.addProjects(projectIds, id);
+        return ResponseEntity.ok(projectIds);
     }
 }

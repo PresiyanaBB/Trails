@@ -10,12 +10,5 @@ public record ProjectExportDto(
         ImageDto image,
         String youtube_url,
         LocalDateTime created_on,
-        List<ArtistData> artists
-) {
-     public record ArtistData(
-            String name,
-            ImageDto image,
-            String description,
-            String instagram_url
-    ) { }
-}
+        List<ArtistDataDto> artists
+) { }

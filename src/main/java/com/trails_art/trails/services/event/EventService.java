@@ -14,9 +14,11 @@ public interface EventService {
 
     void create(Event event);
 
-    void createFromDto(EventDto eventDto);
+    Event createFromDto(EventDto eventDto);
 
     void update(Event event, UUID id);
+
+    Event updateFromDto(EventDto eventDto, UUID id);
 
     void delete(UUID id);
 

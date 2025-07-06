@@ -14,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,8 +41,8 @@ public class ImageControllerTest {
     @BeforeEach
     void setUp() {
         imageRepository.deleteAll();
-        Image image1 = imageRepository.save(new Image("image/png", "test-image1".getBytes(StandardCharsets.UTF_8)));
-        Image image2 = imageRepository.save(new Image("image/png", "test-image2".getBytes(StandardCharsets.UTF_8)));
+        imageRepository.save(new Image("image/png", "test-image1".getBytes(StandardCharsets.UTF_8)));
+        imageRepository.save(new Image("image/png", "test-image2".getBytes(StandardCharsets.UTF_8)));
         savedImage = imageRepository.findAll().get(0);
         savedImage2 = imageRepository.findAll().get(1);
     }
@@ -54,15 +53,6 @@ public class ImageControllerTest {
         mockMvc.perform(get("/api/images"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
-    }
-
-    @Test
-    @DisplayName("GET /api/images/count - returns count of images")
-    void count_returnsCountOfImages() throws Exception {
-        mockMvc.perform(get("/api/images/count"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("2"));
     }
 
     @Test

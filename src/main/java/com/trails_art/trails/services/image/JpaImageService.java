@@ -2,6 +2,7 @@ package com.trails_art.trails.services.image;
 
 import com.trails_art.trails.dtos.ImageDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.mappers.ImageMapper;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.repositories.JpaImageRepository;
 import org.springframework.stereotype.Service;
@@ -36,9 +37,10 @@ public class JpaImageService implements ImageService {
     }
 
     @Override
-    public void createFromDto(ImageDto imageDto) {
-        Image image = new Image(imageDto.mimetype(), Base64.getDecoder().decode(imageDto.data()));
+    public Image createFromDto(ImageDto imageDto) {
+        Image image = ImageMapper.mapToImage(imageDto);
         create(image);
+        return image;
     }
 
     @Override
@@ -52,11 +54,12 @@ public class JpaImageService implements ImageService {
     }
 
     @Override
-    public void updateFromDto(ImageDto imageDto, UUID id) {
+    public Image updateFromDto(ImageDto imageDto, UUID id) {
         Image image = findById(id).orElseThrow(() -> new InvalidArgumentIdException("Image with ID " + id + " not found."));
         image.setData(Base64.getDecoder().decode(imageDto.data()));
         image.setMimetype(imageDto.mimetype());
         update(image,id);
+        return image;
     }
 
     @Override

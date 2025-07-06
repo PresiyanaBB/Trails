@@ -14,11 +14,11 @@ public interface ImageService {
 
     void create(Image image);
 
-    void createFromDto(ImageDto imageDto);
+    Image createFromDto(ImageDto imageDto);
 
     void update(Image image, UUID id);
 
-    void updateFromDto(ImageDto imageDto, UUID id);
+    Image updateFromDto(ImageDto imageDto, UUID id);
 
     void delete(UUID id);
 

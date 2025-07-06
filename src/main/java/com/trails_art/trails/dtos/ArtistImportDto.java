@@ -12,13 +12,6 @@ public record ArtistImportDto(
         ImageDto image,
         String description,
         String instagram_url,
-        ProjectData project,
+        ProjectDataDto project,
         Boolean is_project_existing
-) {
-    public record ProjectData(
-            String name,
-            LocationDto location,
-            ImageDto image,
-            String youtube_url
-    ) { }
-}
+) { }

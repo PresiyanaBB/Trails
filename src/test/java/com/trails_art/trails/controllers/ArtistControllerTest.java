@@ -1,8 +1,6 @@
 package com.trails_art.trails.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.trails_art.trails.dtos.ArtistImportDto;
-import com.trails_art.trails.dtos.export.ExportDtoMethods;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
 import com.trails_art.trails.models.Location;
@@ -23,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,32 +97,33 @@ class ArtistControllerTest {
         savedProject = projectRepository.findAll().get(0);
         savedProject2 = projectRepository.findAll().get(1);
 
-        artistJson = "{\n" +
-                "  \"name\": \"Gosho Pochivka\",\n" +
-                "  \"image\": {\n" +
-                "    \"mimetype\": \"image/jpeg\",\n" +
-                "    \"data\": \"/1j/4AAQSkZJRgABAQEAAAAAAAD/2wBDAAoHBwkJCB0LCwsOCw8PEh4SEh8h\"\n" +
-                "  },\n" +
-                "  \"description\": \"A passionate street artist specializing in graffiti murals.\",\n" +
-                "  \"instagram_url\": \"https://instagram.com/artist_one\",\n" +
-                "  \"projects\": [\n" +
-                "    {\n" +
-                "      \"name\": \"Graffiti Revival\",\n" +
-                "      \"location\": {\n" +
-                "        \"name\": \"Ulica nz, Sofia\",\n" +
-                "        \"map_address\": \"45'65'89\"\n" +
-                "      },\n" +
-                "      \"image\": {\n" +
-                "        \"mimetype\": \"image/jpg\",\n" +
-                "        \"data\": \"/2j/4AAQSkZJRgABAQEAAAAAAAD/2wBDAAoHBwkJCB0LCwsOCw8PEh4SEh8h\"\n" +
-                "      },\n" +
-                "      \"youtube_url\": \"https://youtube.com/watch?v=sample123\"\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"is_project_existing\" : [\n" +
-                "    false\n" +
-                "  ]\n" +
-                "}";
+        artistJson = """
+                {
+                  "name": "Gosho Pochivka",
+                  "image": {
+                    "mimetype": "image/jpeg",
+                    "data": "/1j/4AAQSkZJRgABAQEAAAAAAAD/2wBDAAoHBwkJCB0LCwsOCw8PEh4SEh8h"
+                  },
+                  "description": "A passionate street artist specializing in graffiti murals.",
+                  "instagram_url": "https://instagram.com/artist_one",
+                  "projects": [
+                    {
+                      "name": "Graffiti Revival",
+                      "location": {
+                        "name": "Ulica nz, Sofia",
+                        "map_address": "45'65'89"
+                      },
+                      "image": {
+                        "mimetype": "image/jpg",
+                        "data": "/2j/4AAQSkZJRgABAQEAAAAAAAD/2wBDAAoHBwkJCB0LCwsOCw8PEh4SEh8h"
+                      },
+                      "youtube_url": "https://youtube.com/watch?v=sample123"
+                    }
+                  ],
+                  "is_project_existing" : [
+                    false
+                  ]
+                }""";
     }
 
     @Test
@@ -153,17 +151,9 @@ class ArtistControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/artists/count - returns artist count")
-    void count_returnsArtistCount() throws Exception {
-        mockMvc.perform(get("/api/artists/count"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("2"));
-    }
-
-    @Test
-    @DisplayName("GET /api/artists/name/{name} - returns artists by name")
+    @DisplayName("GET /api/artists?name= - returns artists by name")
     void findByName_returnsArtistsByName() throws Exception {
-        mockMvc.perform(get("/api/artists/name/{name}", "Test Artist"))
+        mockMvc.perform(get("/api/artists?name=", "Test Artist"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
@@ -232,12 +222,12 @@ class ArtistControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/artists/add-projects/{id} - returns 404 for non-existent artist")
+    @DisplayName("PUT /api/artists/{id}/projects - returns 404 for non-existent artist")
     void addProjects_withNonExistentArtist_returns404() throws Exception {
         UUID randomId = UUID.randomUUID();
         java.util.List<String> projectIds = java.util.List.of(savedProject2.getId().toString());
         String json = objectMapper.writeValueAsString(projectIds);
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/artists/add-projects/{id}", randomId)
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/artists/{id}/projects", randomId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isNotFound());

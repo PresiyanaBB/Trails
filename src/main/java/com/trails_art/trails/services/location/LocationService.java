@@ -14,11 +14,11 @@ public interface LocationService {
 
     void create(Location location);
 
-    void createFromDto(LocationDto locationDto);
+    Location createFromDto(LocationDto locationDto);
 
     void update(Location location, UUID id);
 
-    void updateFromDto(LocationDto locationDto, UUID id);
+    Location updateFromDto(LocationDto locationDto, UUID id);
 
     void delete(UUID id);
 

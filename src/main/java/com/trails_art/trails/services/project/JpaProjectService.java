@@ -1,7 +1,9 @@
 package com.trails_art.trails.services.project;
 
+import com.trails_art.trails.dtos.ArtistDataDto;
 import com.trails_art.trails.dtos.ProjectImportDto;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
+import com.trails_art.trails.mappers.ArtistMapper;
 import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
@@ -26,18 +28,15 @@ public class JpaProjectService implements ProjectService {
     private final ArtistService artistService;
     private final ImageService imageService;
     private final LocationService locationService;
-    private final ProjectMapper projectMapper;
 
     public JpaProjectService(JpaProjectRepository jpaProjectRepository,
                              @Lazy ArtistService artistService,
                              ImageService imageService,
-                             LocationService locationService,
-                             ProjectMapper projectMapper) {
+                             LocationService locationService) {
         this.jpaProjectRepository = jpaProjectRepository;
         this.artistService = artistService;
         this.imageService = imageService;
         this.locationService = locationService;
-        this.projectMapper = projectMapper;
     }
 
     @Override
@@ -64,8 +63,8 @@ public class JpaProjectService implements ProjectService {
     }
 
     @Override
-    public void createFromDto(ProjectImportDto projectImportDto){
-        Project project = projectMapper.mapToProject(projectImportDto);
+    public Project createFromDto(ProjectImportDto projectImportDto){
+        Project project = ProjectMapper.mapToProject(projectImportDto);
 
         if (!projectImportDto.is_artist_existing()) {
             handleNewArtist(projectImportDto.artist(), project);
@@ -74,6 +73,7 @@ public class JpaProjectService implements ProjectService {
         }
 
         create(project);
+        return project;
     }
 
     @Override
@@ -87,7 +87,7 @@ public class JpaProjectService implements ProjectService {
     }
 
     @Override
-    public void updateFromDto(ProjectImportDto projectImportDto, UUID id) {
+    public Project updateFromDto(ProjectImportDto projectImportDto, UUID id) {
          Project project = findById(id).orElseThrow(() -> new InvalidArgumentIdException("Project with ID " + id + " not found."));
 
          Image image = imageService.findById(project.getImage().getId()).orElseThrow(() -> new InvalidArgumentIdException("Image for project with ID " + project.getImage().getId() + " not found."));
@@ -106,6 +106,7 @@ public class JpaProjectService implements ProjectService {
          project.setYoutubeUrl(projectImportDto.youtube_url());
 
          update(project, id);
+         return project;
     }
 
     @Override
@@ -167,8 +168,8 @@ public class JpaProjectService implements ProjectService {
         update(project, project.getId());
     }
 
-    private void handleNewArtist(ProjectImportDto.ArtistData dto, Project project) {
-        Artist artist = projectMapper.mapToArtist(dto);
+    private void handleNewArtist(ArtistDataDto dto, Project project) {
+        Artist artist = ArtistMapper.mapToArtist(dto);
 
         artist.getProjects().add(project);
         project.getArtists().add(artist);
@@ -176,7 +177,7 @@ public class JpaProjectService implements ProjectService {
         artistService.create(artist);
     }
 
-    private void handleExistingArtist(ProjectImportDto.ArtistData dto, Project project) {
+    private void handleExistingArtist(ArtistDataDto dto, Project project) {
         List<Artist> artists = artistService.findByName(dto.name());
 
         for (Artist artist : artists) {

@@ -1,20 +1,17 @@
 package com.trails_art.trails.controllers;
 
 import com.trails_art.trails.dtos.EventDto;
-import com.trails_art.trails.dtos.export.ExportDtoMethods;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
-import com.trails_art.trails.exceptions.InvalidDTOFormat;
+import com.trails_art.trails.mappers.EventMapper;
 import com.trails_art.trails.models.Event;
 import com.trails_art.trails.services.event.EventService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -23,93 +20,59 @@ public class EventController {
 
     private final EventService eventService;
 
-    EventController(EventService eventService) {
+    public EventController(EventService eventService) {
         this.eventService = eventService;
     }
 
     @GetMapping
-    ResponseEntity<List<EventDto>> findAll() {
-        return new ResponseEntity<>(eventService.findAll().stream().map(ExportDtoMethods::eventExport).toList()
-                , HttpStatus.OK);
+    public ResponseEntity<List<EventDto>> findAll() {
+        List<EventDto> dtos = eventService.findAll().stream()
+                .map(EventMapper::mapToEventDto)
+                .toList();
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(dtos.size()))
+                .body(dtos);
     }
 
     @GetMapping("/{id}")
-    ResponseEntity<EventDto> findById(@PathVariable UUID id) {
-        Optional<Event> event;
-        try {
-            event = eventService.findById(id);
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        if (event.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found.");
-        }
-        return new ResponseEntity<>(ExportDtoMethods.eventExport(event.get()), HttpStatus.OK);
+    public ResponseEntity<EventDto> findById(@PathVariable UUID id) {
+        Event event = eventService.findById(id)
+                .orElseThrow(() -> new InvalidArgumentIdException("Event not found."));
+        return ResponseEntity.ok(EventMapper.mapToEventDto(event));
     }
 
-    @Transactional
+    @GetMapping(params = "name")
+    public ResponseEntity<List<EventDto>> findByName(@RequestParam String name) {
+        List<EventDto> dtos = eventService.findByName(name).stream()
+                .map(EventMapper::mapToEventDto)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
+
     @PostMapping
-    ResponseEntity<Void> create(@Valid @RequestBody EventDto eventDto) {
-        try {
-            eventService.createFromDto(eventDto);
-        } catch (InvalidDTOFormat e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.CREATED);
+    @Transactional
+    public ResponseEntity<EventDto> create(@Valid @RequestBody EventDto dto) {
+        Event event = eventService.createFromDto(dto);
+        URI location = URI.create("/api/events/" + event.getId());
+        return ResponseEntity.created(location)
+                .body(EventMapper.mapToEventDto(event));
     }
 
-    @Transactional
     @PutMapping("/{id}")
-    ResponseEntity<Void> update(@Valid @RequestBody Event event, @PathVariable UUID id) {
-        try {
-            eventService.update(event, id);
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (InvalidDTOFormat e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
     @Transactional
+    public ResponseEntity<EventDto> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody EventDto dto
+    ) {
+        Event event = eventService.updateFromDto(dto, id);
+        return ResponseEntity.ok(EventMapper.mapToEventDto(event));
+    }
+
     @DeleteMapping("/{id}")
-    ResponseEntity<Void> delete(@PathVariable String id) {
-        try {
-            eventService.delete(UUID.fromString(id));
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @GetMapping("/count")
-    ResponseEntity<Integer> count() {
-        return new ResponseEntity<>(eventService.count(), HttpStatus.OK);
-    }
-
-    @GetMapping("/name/{name}")
-    ResponseEntity<List<EventDto>> findByName(@PathVariable String name) {
-        List<EventDto> events;
-        try {
-            events = eventService.findByName(name).stream().map(ExportDtoMethods::eventExport).toList();
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(events, HttpStatus.OK);
+    @Transactional
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        eventService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,23 +1,22 @@
 package com.trails_art.trails.controllers;
 
+import com.trails_art.trails.dtos.ArtistDataDto;
+import com.trails_art.trails.dtos.ArtistExportDto;
 import com.trails_art.trails.dtos.ProjectImportDto;
 import com.trails_art.trails.dtos.ProjectExportDto;
-import com.trails_art.trails.dtos.export.ExportDtoMethods;
 import com.trails_art.trails.exceptions.InvalidArgumentIdException;
-import com.trails_art.trails.exceptions.InvalidDTOFormat;
+import com.trails_art.trails.mappers.ArtistMapper;
+import com.trails_art.trails.mappers.ProjectMapper;
 import com.trails_art.trails.models.Artist;
-import com.trails_art.trails.models.Image;
+import com.trails_art.trails.models.Project;
 import com.trails_art.trails.services.project.ProjectService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Base64;
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -26,152 +25,97 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
-    ProjectController(ProjectService projectService) {
+    public ProjectController(ProjectService projectService) {
         this.projectService = projectService;
     }
 
     @GetMapping
-    ResponseEntity<List<ProjectExportDto>> findAll() {
-        return new ResponseEntity<>(projectService.findAll().stream().map(ExportDtoMethods::exportProject).toList(), HttpStatus.OK);
+    public ResponseEntity<List<ProjectExportDto>> findAll() {
+        List<ProjectExportDto> dtos = projectService.findAll().stream()
+                .map(ProjectMapper::mapToProjectDto)
+                .toList();
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(dtos.size()))
+                .body(dtos);
     }
 
     @GetMapping("/{id}")
-    ResponseEntity<ProjectExportDto> findById(@PathVariable UUID id) {
-        Optional<ProjectExportDto> project;
-        try {
-            project = projectService.findById(id).map(ExportDtoMethods::exportProject);
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        if (project.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found.");
-        }
-        return new ResponseEntity<>(project.get(), HttpStatus.OK);
+    public ResponseEntity<ProjectExportDto> findById(@PathVariable UUID id) {
+        Project project = projectService.findById(id)
+                .orElseThrow(() -> new InvalidArgumentIdException("Project not found."));
+        return ResponseEntity.ok(ProjectMapper.mapToProjectDto(project));
     }
 
-    @Transactional
+    @GetMapping(params = "name")
+    public ResponseEntity<List<ProjectExportDto>> findByName(@RequestParam String name) {
+        List<ProjectExportDto> dtos = projectService.findByName(name).stream()
+                .map(ProjectMapper::mapToProjectDto)
+                .toList();
+
+        if (dtos.isEmpty()) {
+            throw new InvalidArgumentIdException("No projects found with name: " + name);
+        }
+        return ResponseEntity.ok(dtos);
+    }
+
     @PostMapping
-    ResponseEntity<Void> create(@Valid @RequestBody ProjectImportDto projectImportDto) {
-        try {
-            projectService.createFromDto(projectImportDto);
-        } catch (InvalidDTOFormat e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.CREATED);
+    @Transactional
+    public ResponseEntity<ProjectExportDto> create(@Valid @RequestBody ProjectImportDto dto) {
+        Project project = projectService.createFromDto(dto);
+        URI location = URI.create("/api/projects/" + project.getId());
+        return ResponseEntity.created(location)
+                .body(ProjectMapper.mapToProjectDto(project));
     }
 
-    @Transactional
     @PutMapping("/{id}")
-    ResponseEntity<Void> update(@Valid @RequestBody ProjectImportDto projectImportDto, @PathVariable UUID id) {
-        try {
-            projectService.updateFromDto(projectImportDto, id);
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (InvalidDTOFormat e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    @Transactional
+    public ResponseEntity<ProjectExportDto> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ProjectImportDto dto
+    ) {
+        Project project = projectService.updateFromDto(dto, id);
+        return ResponseEntity.ok(ProjectMapper.mapToProjectDto(project));
     }
 
+    @PostMapping("/{projectId}/artists")
     @Transactional
-    @PostMapping("/{id}/artists")
-    ResponseEntity<Void> addNonExistingArtist(@Valid @RequestBody ProjectImportDto.ArtistData artistDto, @PathVariable UUID id) {
-        Image image;
-        try {
-           image = new Image(artistDto.image().mimetype(), Base64.getDecoder().decode(artistDto.image().data()));
-        } catch (InvalidDTOFormat e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+    public ResponseEntity<ArtistExportDto> addNonExistingArtist(
+            @PathVariable UUID projectId,
+            @Valid @RequestBody ArtistDataDto artistDto
+    ) {
+        Artist artist = ArtistMapper.mapToArtist(artistDto);
+        projectService.addNonExistingArtist(projectId, artist);
 
-        Artist artist;
-        try {
-            artist = new Artist(artistDto.name(), image, artistDto.description(), artistDto.instagram_url());
-        } catch (InvalidDTOFormat e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        try {
-            projectService.addNonExistingArtist(id, artist);
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        URI location = URI.create("/api/artists/" + artist.getId());
+        return ResponseEntity.created(location)
+                .body(ArtistMapper.mapToArtistDto(artist));
     }
 
+    @PutMapping("/{projectId}/artists/{artistId}")
     @Transactional
-    @PutMapping("/{project_id}/artists/{artist_id}")
-    ResponseEntity<Void> addExistingArtist(@PathVariable UUID project_id, @PathVariable UUID artist_id) {
-        try {
-            projectService.addExistingArtist(project_id, artist_id);
-        } catch (InvalidArgumentIdException e){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.ACCEPTED);
+    public ResponseEntity<Void> addExistingArtist(
+            @PathVariable UUID projectId,
+            @PathVariable UUID artistId
+    ) {
+        projectService.addExistingArtist(projectId, artistId);
+        return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{projectId}/artists/{artistId}")
     @Transactional
-    @DeleteMapping("/{project_id}/artists/{artist_id}")
-    ResponseEntity<Void> deleteArtist(@PathVariable UUID project_id, @PathVariable UUID artist_id) {
-        try {
-            projectService.deleteArtist(project_id, artist_id);
-        } catch (InvalidArgumentIdException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Void> deleteArtist(
+            @PathVariable UUID projectId,
+            @PathVariable UUID artistId
+    ) {
+        projectService.deleteArtist(projectId, artistId);
+        return ResponseEntity.noContent().build();
     }
 
-    @Transactional
     @DeleteMapping("/{id}")
-    ResponseEntity<Void> delete(@PathVariable String id) {
-        try {
-            projectService.delete(UUID.fromString(id));
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @GetMapping("/count")
-    ResponseEntity<Integer> count() {
-        return new ResponseEntity<>(projectService.count(), HttpStatus.OK);
-    }
-
-    @GetMapping("/name/{name}")
-    ResponseEntity<List<ProjectExportDto>> findByName(@PathVariable String name) {
-        List<ProjectExportDto> projects;
-        try {
-            projects = projectService.findByName(name).stream().map(ExportDtoMethods::exportProject).toList();
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-
-        return new ResponseEntity<>(projects, HttpStatus.OK);
+    @Transactional
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        projectService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

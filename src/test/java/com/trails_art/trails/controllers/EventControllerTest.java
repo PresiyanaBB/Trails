@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,14 +78,6 @@ public class EventControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 
-    @Test
-    @DisplayName("GET /api/events/count - returns count of events")
-    void count_returnsCountOfEvents() throws Exception {
-        mockMvc.perform(get("/api/events/count"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().string("2"));
-    }
 
     @Test
     @DisplayName("GET /api/events/{id} - returns event when exists")

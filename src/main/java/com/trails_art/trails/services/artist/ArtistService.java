@@ -16,11 +16,11 @@ public interface ArtistService {
 
     void create(Artist artist);
 
-    void createFromDto(ArtistImportDto artistImportDto);
+    Artist createFromDto(ArtistImportDto artistImportDto);
 
     void update(Artist artist, UUID id);
 
-    void updateFromDto(ArtistImportDto artistImportDto, UUID id);
+    Artist updateFromDto(ArtistImportDto artistImportDto, UUID id);
 
     void delete(UUID id);
 

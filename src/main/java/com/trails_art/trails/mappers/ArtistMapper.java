@@ -1,25 +1,22 @@
 package com.trails_art.trails.mappers;
 
+import com.trails_art.trails.dtos.ArtistDataDto;
+import com.trails_art.trails.dtos.ArtistExportDto;
 import com.trails_art.trails.dtos.ArtistImportDto;
+import com.trails_art.trails.dtos.ImageDto;
+import com.trails_art.trails.dtos.ProjectDataDto;
 import com.trails_art.trails.exceptions.InvalidDTOFormat;
 import com.trails_art.trails.models.Artist;
 import com.trails_art.trails.models.Image;
-import com.trails_art.trails.models.Location;
-import com.trails_art.trails.models.Project;
 import org.springframework.stereotype.Component;
 
-import java.util.Base64;
+import java.util.List;
 
 @Component
 public class ArtistMapper {
 
-    public Artist mapToArtist(ArtistImportDto dto) {
-        Image image;
-        try {
-            image = new Image(dto.image().mimetype(), Base64.getDecoder().decode(dto.image().data()));
-        } catch (Exception e) {
-            throw new InvalidDTOFormat("Image DTO is not valid");
-        }
+    public static Artist mapToArtist(ArtistDataDto dto) {
+        Image image = ImageMapper.mapToImage(dto.image());
 
         Artist artist;
         try {
@@ -31,29 +28,40 @@ public class ArtistMapper {
         return artist;
     }
 
-    public Project mapToProject(ArtistImportDto.ProjectData dto) {
-        Image image;
+    public static Artist mapToArtist(ArtistImportDto dto) {
+        Image image = ImageMapper.mapToImage(dto.image());
+
+        Artist artist;
         try {
-            image = new Image(dto.image().mimetype(), Base64.getDecoder().decode(dto.image().data()));
+            artist = new Artist(dto.name(), image, dto.description(), dto.instagram_url());
         } catch (Exception e) {
-            throw new InvalidDTOFormat("Image DTO is not valid");
+            throw new InvalidDTOFormat("Artist DTO is not valid");
         }
 
-        Location location;
-        try {
-         location = new Location(dto.location().name(), dto.location().map_address());
-        } catch (Exception e) {
-            throw new InvalidDTOFormat("Location DTO is not valid");
-        }
-
-        Project project;
-        try {
-            project = new Project(dto.name(), location, image, dto.youtube_url());
-        } catch (Exception e) {
-            throw new InvalidDTOFormat("Project DTO is not valid");
-        }
-
-        return project;
+        return artist;
     }
+
+    public static ArtistExportDto mapToArtistDto(Artist artist) {
+        ImageDto imageDto = ImageMapper.mapToImageDto(artist.getImage());
+
+        List<ProjectDataDto> projectDataList = artist.getProjects().stream()
+                .map(ap -> new ProjectDataDto(
+                        ap.getName(),
+                        LocationMapper.mapToLocationDto(ap.getLocation()),
+                        ImageMapper.mapToImageDto(ap.getImage()),
+                        ap.getYoutubeUrl(),
+                        ap.getCreatedOn().toString()
+                )).toList();
+
+        return new ArtistExportDto(
+                artist.getId().toString(),
+                artist.getName(),
+                imageDto,
+                artist.getDescription(),
+                artist.getInstagramUrl(),
+                projectDataList
+        );
+    }
+
 }
 
